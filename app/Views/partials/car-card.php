@@ -1,0 +1,4 @@
+<article class="car-card">
+    <a class="car-image" href="<?= e(url('/xe/' . $car['slug'])) ?>"><img src="<?= e($car['image_url']) ?>" alt="<?= e($car['name']) ?>" loading="lazy"><span class="image-badge"><?= e($car['badge'] ?: 'Sẵn sàng giao') ?></span><span class="heart" aria-hidden="true">♡</span></a>
+    <div class="car-info"><div class="car-brand"><?= e($car['brand']) ?> <span>· <?= e($car['year']) ?></span></div><h3><a href="<?= e(url('/xe/' . $car['slug'])) ?>"><?= e($car['name']) ?></a></h3><div class="specs"><span>⚙ <?= e($car['transmission']) ?></span><span>◉ <?= e($car['fuel']) ?></span><span>↗ <?= e($car['body_type']) ?></span></div><div class="car-bottom"><strong><?= money($car['price']) ?></strong><a class="arrow-link" href="<?= e(url('/xe/' . $car['slug'])) ?>" aria-label="Xem <?= e($car['name']) ?>">↗</a></div></div>
+</article>
