@@ -6,6 +6,7 @@ use App\Controllers\HomeController;
 use App\Controllers\CarController;
 use App\Controllers\AuthController;
 use App\Controllers\AdminController;
+use App\Controllers\Admin\CarController as AdminCarController;
 
 require __DIR__ . '/app/Core/Autoloader.php';
 date_default_timezone_set('Asia/Ho_Chi_Minh');
@@ -23,6 +24,12 @@ $router->get('/dang-ky', [AuthController::class, 'registerForm']);
 $router->post('/dang-ky', [AuthController::class, 'register']);
 $router->post('/dang-xuat', [AuthController::class, 'logout']);
 $router->get('/admin', [AdminController::class, 'index']);
+$router->get('/admin/xe', [AdminCarController::class, 'index']);
+$router->get('/admin/xe/them', [AdminCarController::class, 'createForm']);
+$router->post('/admin/xe', [AdminCarController::class, 'store']);
+$router->get('/admin/xe/{id}/sua', [AdminCarController::class, 'editForm']);
+$router->post('/admin/xe/{id}/cap-nhat', [AdminCarController::class, 'update']);
+$router->post('/admin/xe/{id}/xoa', [AdminCarController::class, 'delete']);
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
