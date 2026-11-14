@@ -24,6 +24,11 @@ final class Car
         return $stmt->fetchAll();
     }
 
+    public function countAll(): int
+    {
+        return (int) $this->db->query('SELECT COUNT(*) FROM cars')->fetchColumn();
+    }
+
     public function search(array $filters): array
     {
         $sql = 'SELECT * FROM cars WHERE status = :status';

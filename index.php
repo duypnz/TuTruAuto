@@ -5,6 +5,7 @@ use App\Core\Router;
 use App\Controllers\HomeController;
 use App\Controllers\CarController;
 use App\Controllers\AuthController;
+use App\Controllers\AdminController;
 
 require __DIR__ . '/app/Core/Autoloader.php';
 date_default_timezone_set('Asia/Ho_Chi_Minh');
@@ -21,6 +22,7 @@ $router->post('/dang-nhap', [AuthController::class, 'login']);
 $router->get('/dang-ky', [AuthController::class, 'registerForm']);
 $router->post('/dang-ky', [AuthController::class, 'register']);
 $router->post('/dang-xuat', [AuthController::class, 'logout']);
+$router->get('/admin', [AdminController::class, 'index']);
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {

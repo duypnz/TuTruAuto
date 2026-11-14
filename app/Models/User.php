@@ -28,4 +28,9 @@ final class User
         $stmt->execute(['name' => $name, 'email' => $email, 'password' => $passwordHash]);
         return (int) $this->db->lastInsertId();
     }
+
+    public function countAll(): int
+    {
+        return (int) $this->db->query('SELECT COUNT(*) FROM users')->fetchColumn();
+    }
 }

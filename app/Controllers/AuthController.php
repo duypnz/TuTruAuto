@@ -11,7 +11,7 @@ final class AuthController extends Controller
 {
     public function loginForm(): void
     {
-        if (isset($_SESSION['user'])) $this->redirect('/');
+        if (isset($_SESSION['user'])) $this->redirect(($_SESSION['user']['role'] ?? '') === 'admin' ? '/admin' : '/');
         $this->render('auth/login', ['error' => $this->takeFlash(), 'csrf' => Csrf::token()]);
     }
 
@@ -40,7 +40,7 @@ final class AuthController extends Controller
         unset($_SESSION['_login_attempts'][$key]);
         session_regenerate_id(true);
         $_SESSION['user'] = ['id' => (int) $user['id'], 'name' => $user['name'], 'email' => $user['email'], 'role' => $user['role']];
-        $this->redirect('/');
+        $this->redirect($user['role'] === 'admin' ? '/admin' : '/');
     }
 
     public function registerForm(): void
