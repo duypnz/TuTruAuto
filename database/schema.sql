@@ -1,6 +1,16 @@
 CREATE DATABASE IF NOT EXISTS tu_tru_auto CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE tu_tru_auto;
 
+CREATE TABLE IF NOT EXISTS users (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(120) NOT NULL,
+    email VARCHAR(190) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL,
+    role ENUM('admin','customer') NOT NULL DEFAULT 'customer',
+    status ENUM('active','inactive','locked') NOT NULL DEFAULT 'active',
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS cars (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(180) NOT NULL,

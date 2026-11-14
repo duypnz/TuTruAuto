@@ -18,7 +18,7 @@ $title = $title ?? 'Showroom ô tô chính hãng';
 <header class="site-header"><div class="container nav-wrap">
     <a class="brand" href="<?= e(url('/')) ?>"><span class="brand-mark">T</span><span>TU TRU <small>AUTO</small></span></a>
     <nav class="main-nav"><a href="<?= e(url('/')) ?>">Trang chủ</a><a href="<?= e(url('/xe')) ?>">Mua xe</a><a href="<?= e(url('/#dich-vu')) ?>">Dịch vụ</a><a href="<?= e(url('/#ve-chung-toi')) ?>">Về chúng tôi</a></nav>
-    <a class="nav-cta" href="tel:19006868">Liên hệ tư vấn <span>↗</span></a>
+    <?php if (isset($_SESSION['user'])): ?><div class="account-nav"><span>Xin chào, <?= e($_SESSION['user']['name']) ?></span><form method="post" action="<?= e(url('/dang-xuat')) ?>"><input type="hidden" name="_csrf" value="<?= e(\App\Core\Csrf::token()) ?>"><button type="submit">Đăng xuất</button></form></div><?php else: ?><a class="nav-cta" href="<?= e(url('/dang-nhap')) ?>">Đăng nhập <span>↗</span></a><?php endif; ?>
     <button class="menu-toggle" aria-label="Mở menu">☰</button>
 </div></header>
 <main><?= $content ?></main>
