@@ -71,7 +71,7 @@ final class CarController extends Controller
             return;
         }
         $data['image_url'] = $imagePath;
-        $data['slug'] = Car::uniqueSlug(Car::slugify($data['name']));
+        $data['slug'] = (new Car())->uniqueSlug(Car::slugify($data['name']));
 
         (new Car())->create($data);
         $_SESSION['_flash'] = 'Đã thêm xe mới thành công.';
@@ -153,7 +153,7 @@ final class CarController extends Controller
 
         $baseSlug = Car::slugify($data['name']);
         if ($baseSlug !== Car::slugify($car['name'])) {
-            $data['slug'] = Car::uniqueSlug($baseSlug, $id);
+            $data['slug'] = (new Car())->uniqueSlug($baseSlug, $id);
         } else {
             $data['slug'] = $car['slug'];
         }
