@@ -19,4 +19,16 @@ abstract class Controller
         extract($data, EXTR_SKIP);
         require dirname(__DIR__) . '/Views/' . $view . '.php';
     }
+
+    protected function requireAdmin(): void
+    {
+        if (!isset($_SESSION['user'])) {
+            $this->redirect('/dang-nhap');
+        }
+        if (($_SESSION['user']['role'] ?? '') !== 'admin') {
+            http_response_code(403);
+            $this->render('errors/403');
+            exit;
+        }
+    }
 }
