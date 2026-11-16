@@ -62,4 +62,26 @@ final class Car
         $stmt->execute(['slug' => $slug, 'status' => 'available']);
         return $stmt->fetch() ?: null;
     }
+
+    public function findBySlugs(array $slugs): array
+    {
+        if ($slugs === []) {
+            return [];
+        }
+
+        $placeholders = [];
+        foreach ($slugs as $index => $slug) {
+            $placeholders[] = ':slug' . $index;
+        }
+
+        $sql = 'SELECT * FROM cars WHERE status = :status AND slug IN (' . implode(', ', $placeholders) . ') ORDER BY created_at DESC';
+        $stmt = $this->db->prepare($sql);
+        $params = ['status' => 'available'];
+        foreach ($slugs as $index => $slug) {
+            $params['slug' . $index] = $slug;
+        }
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
 }

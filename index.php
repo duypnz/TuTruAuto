@@ -23,6 +23,8 @@ $router->get('/dang-ky', [AuthController::class, 'registerForm']);
 $router->post('/dang-ky', [AuthController::class, 'register']);
 $router->post('/dang-xuat', [AuthController::class, 'logout']);
 $router->get('/admin', [AdminController::class, 'index']);
+$router->get('/yeu-thich', [CarController::class, 'favorites']);
+$router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
