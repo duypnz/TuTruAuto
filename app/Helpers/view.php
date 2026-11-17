@@ -1,6 +1,4 @@
-
-<?php
-declare(strict_types=1);
+<?php declare(strict_types=1);
 
 function e(mixed $value): string
 {
@@ -49,7 +47,7 @@ function isFavorite(string $slug): bool
     if (
         !isCustomerLoggedIn()
         || (int) ($_SESSION['favorites_user_id'] ?? 0)
-            !== (int) $_SESSION['user']['id']
+        !== (int) $_SESSION['user']['id']
         || !isset($_SESSION['favorites'])
         || !is_array($_SESSION['favorites'])
     ) {
@@ -64,7 +62,7 @@ function favoriteCount(): int
     if (
         !isCustomerLoggedIn()
         || (int) ($_SESSION['favorites_user_id'] ?? 0)
-            !== (int) $_SESSION['user']['id']
+        !== (int) $_SESSION['user']['id']
         || !isset($_SESSION['favorites'])
         || !is_array($_SESSION['favorites'])
     ) {
