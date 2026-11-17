@@ -1,33 +1,3 @@
-<?php
-declare(strict_types=1);
-require_once dirname(__DIR__, 2) . '/Helpers/view.php';
-$title = $title ?? 'Showroom ô tô chính hãng';
-?>
-<!doctype html>
-<html lang="vi">
-
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= e($title) ?> | Tu Tru Auto</title>
-    <meta name="description"
-        content="Khám phá xe mới, xe đã qua sử dụng chất lượng tại Tu Tru Auto. Tư vấn tận tâm, giá minh bạch, lái thử miễn phí.">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link
-        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet"
-        href="<?= e(url('/public/assets/css/style.css')) ?>?v=<?= e((string) filemtime(dirname(__DIR__, 3) . '/public/assets/css/style.css')) ?>">
-</head>
-
-<body>
-    <div class="topline">
-        <div class="container top-inner"><span>✦ Tư vấn mua xe tận tâm · Đồng hành trên mọi hành
-                trình</span><span>Hotline <strong>1900 6868</strong></span></div>
-    </div>
-    <header class="site-header">
-        <div class="container nav-wrap">
             <a class="brand" href="<?= e(url('/')) ?>"><span class="brand-mark">T</span><span>TU TRU
                     <small>AUTO</small></span></a>
             <nav class="main-nav"><a href="<?= e(url('/')) ?>">Trang chủ</a><a href="<?= e(url('/xe')) ?>">Mua xe</a><a
@@ -44,8 +14,10 @@ $title = $title ?? 'Showroom ô tô chính hãng';
                     </button>
                     <div class="account-dropdown">
                         <div class="account-dropdown-header">Tài khoản của bạn</div>
-                        <?php if (isCustomerLoggedIn()): ?><a href="<?= e(url('/yeu-thich')) ?>">Danh sách yêu thích
-                            (<?= e(favoriteCount()) ?>)</a><?php endif; ?>
+                        <?php if (isCustomerLoggedIn()): ?>
+                            <a href="<?= e(url('/tai-khoan/ho-so')) ?>">Thông tin hồ sơ</a>
+                            <a href="<?= e(url('/yeu-thich')) ?>">Danh sách yêu thích (<?= e(favoriteCount()) ?>)</a>
+                        <?php endif; ?>
                         <?php if (($_SESSION['user']['role'] ?? '') === 'admin'): ?><a
                             href="<?= e(url('/admin')) ?>">Quản trị</a><?php endif; ?>
                         <form method="post" action="<?= e(url('/dang-xuat')) ?>">
@@ -87,7 +59,7 @@ $title = $title ?? 'Showroom ô tô chính hãng';
             <h4>Khám phá</h4>
             <a href="<?= e(url('/xe')) ?>">Tất cả xe</a>
             <a href="<?= e(url('/xe?body_type=SUV')) ?>">Xe SUV</a>
-            <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Mcp</a>
+            <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Hybrid</a>
             <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Sedan</a>
             <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Coupe</a>
         </nav>

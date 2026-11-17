@@ -23,6 +23,8 @@ $router->post('/dang-nhap', [AuthController::class, 'login']);
 $router->get('/dang-ky', [AuthController::class, 'registerForm']);
 $router->post('/dang-ky', [AuthController::class, 'register']);
 $router->post('/dang-xuat', [AuthController::class, 'logout']);
+$router->get('/tai-khoan/ho-so', [AuthController::class, 'profile']);
+$router->post('/tai-khoan/ho-so', [AuthController::class, 'updateProfile']);
 $router->get('/admin', [AdminController::class, 'index']);
 $router->get('/yeu-thich', [CarController::class, 'favorites']);
 $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
@@ -32,6 +34,8 @@ $router->post('/admin/xe', [AdminCarController::class, 'store']);
 $router->get('/admin/xe/{id}/sua', [AdminCarController::class, 'editForm']);
 $router->post('/admin/xe/{id}/cap-nhat', [AdminCarController::class, 'update']);
 $router->post('/admin/xe/{id}/xoa', [AdminCarController::class, 'delete']);
+$router->get('/yeu-thich', [CarController::class, 'favorites']);
+$router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $path = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
