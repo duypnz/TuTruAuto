@@ -24,6 +24,8 @@ $router->get('/dang-ky', [AuthController::class, 'registerForm']);
 $router->post('/dang-ky', [AuthController::class, 'register']);
 $router->post('/dang-xuat', [AuthController::class, 'logout']);
 $router->get('/admin', [AdminController::class, 'index']);
+$router->get('/yeu-thich', [CarController::class, 'favorites']);
+$router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $router->get('/admin/xe', [AdminCarController::class, 'index']);
 $router->get('/admin/xe/them', [AdminCarController::class, 'createForm']);
 $router->post('/admin/xe', [AdminCarController::class, 'store']);
