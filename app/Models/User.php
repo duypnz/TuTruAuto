@@ -33,4 +33,17 @@ final class User
     {
         return (int) $this->db->query('SELECT COUNT(*) FROM users')->fetchColumn();
     }
+
+    public function findProfile(int $id): ?array
+    {
+        $stmt = $this->db->prepare('SELECT id, name, email, phone, address FROM users WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $id]);
+        return $stmt->fetch() ?: null;
+    }
+
+    public function updateProfile(int $id, string $name, string $phone, string $address): void
+    {
+        $stmt = $this->db->prepare('UPDATE users SET name = :name, phone = :phone, address = :address WHERE id = :id');
+        $stmt->execute(['name' => $name, 'phone' => $phone !== '' ? $phone : null, 'address' => $address !== '' ? $address : null, 'id' => $id]);
+    }
 }
