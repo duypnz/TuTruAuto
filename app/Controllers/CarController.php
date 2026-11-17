@@ -1,3 +1,4 @@
+
 <?php
 declare(strict_types=1);
 
@@ -18,17 +19,20 @@ final class CarController extends Controller
             'fuel' => trim((string) ($_GET['fuel'] ?? '')),
             'sort' => (string) ($_GET['sort'] ?? ''),
         ]);
+
         $this->render('cars/index', ['cars' => $cars]);
     }
 
     public function show(array $params): void
     {
         $car = (new Car())->findBySlug((string) $params['slug']);
+
         if (!$car) {
             http_response_code(404);
             $this->render('errors/404');
             return;
         }
+
         $this->render('cars/show', ['car' => $car]);
     }
 
@@ -38,13 +42,17 @@ final class CarController extends Controller
             return;
         }
 
-        $favorites = (int) ($_SESSION['favorites_user_id'] ?? 0) === (int) $_SESSION['user']['id']
+        $favorites = (int) ($_SESSION['favorites_user_id'] ?? 0)
+            === (int) $_SESSION['user']['id']
             ? ($_SESSION['favorites'] ?? [])
             : [];
+
         if (!is_array($favorites)) {
             $favorites = [];
         }
+
         $cars = (new Car())->findBySlugs($favorites);
+
         $this->render('favorites/index', ['cars' => $cars]);
     }
 
@@ -56,24 +64,29 @@ final class CarController extends Controller
 
         if (!Csrf::valid($_POST['_csrf'] ?? null)) {
             http_response_code(419);
-            $this->redirect($this->redirectTarget());
+            echo 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang và thử lại.';
+            return;
         }
 
         $slug = trim((string) ($params['slug'] ?? ''));
-        if ($slug === '') {
-            $this->redirect($this->redirectTarget());
+
+        if ($slug === '' || !(new Car())->findBySlug($slug)) {
+            http_response_code(404);
+            $this->render('errors/404');
+            return;
         }
 
-        $favorites = $_SESSION['favorites'] ?? [];
+        $favorites = (int) ($_SESSION['favorites_user_id'] ?? 0)
+            === (int) $_SESSION['user']['id']
+            ? ($_SESSION['favorites'] ?? [])
+            : [];
+
         if (!is_array($favorites)) {
             $favorites = [];
         }
 
-        if ((int) ($_SESSION['favorites_user_id'] ?? 0) !== (int) $_SESSION['user']['id']) {
-            $favorites = [];
-        }
-
         $index = array_search($slug, $favorites, true);
+
         if ($index === false) {
             $favorites[] = $slug;
         } else {
@@ -83,6 +96,7 @@ final class CarController extends Controller
 
         $_SESSION['favorites'] = $favorites;
         $_SESSION['favorites_user_id'] = (int) $_SESSION['user']['id'];
+
         $this->redirect($this->redirectTarget());
     }
 
@@ -90,9 +104,13 @@ final class CarController extends Controller
     {
         if (!isset($_SESSION['user'])) {
             $this->redirect('/dang-nhap');
+            return false;
         }
 
-        if (($_SESSION['user']['role'] ?? '') !== 'customer' || !isset($_SESSION['user']['id'])) {
+        if (
+            ($_SESSION['user']['role'] ?? '') !== 'customer'
+            || !isset($_SESSION['user']['id'])
+        ) {
             http_response_code(403);
             $this->render('errors/403');
             return false;
@@ -104,26 +122,35 @@ final class CarController extends Controller
     private function redirectTarget(): string
     {
         $referer = $_SERVER['HTTP_REFERER'] ?? '';
-        if ($referer === '') {
-            return '/';
-        }
+        $parsed = $referer !== '' ? parse_url($referer) : false;
 
-        $parsed = parse_url($referer);
         if (!is_array($parsed) || empty($parsed['path'])) {
             return '/';
         }
 
-        $path = $parsed['path'];
-        if ($path === '' || $path === '/') {
-            $path = '/';
-        }
+        $path = '/' . ltrim((string) $parsed['path'], '/');
 
-        $base = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
-        if ($base !== '' && $base !== '/' && str_starts_with($path, $base)) {
+        $base = rtrim(
+            str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')),
+            '/'
+        );
+
+        if (
+            $base !== ''
+            && $base !== '/'
+            && ($path === $base || str_starts_with($path, $base . '/'))
+        ) {
             $path = substr($path, strlen($base)) ?: '/';
         }
 
-        $query = isset($parsed['query']) && $parsed['query'] !== '' ? '?' . $parsed['query'] : '';
+        if (!str_starts_with($path, '/') || str_starts_with($path, '//')) {
+            return '/';
+        }
+
+        $query = isset($parsed['query']) && $parsed['query'] !== ''
+            ? '?' . $parsed['query']
+            : '';
+
         return $path . $query;
     }
 }
