@@ -121,7 +121,7 @@ final class CarController extends Controller
         }
 
         $errors = [];
-        $data = $this->validate($_POST, $_FILES, false, $errors);
+        $data = $this->validate($_POST, $_FILES, false, $errors, $id);
         if ($errors) {
             $this->render('admin/cars/form', [
                 'title' => 'Sửa xe: ' . $car['name'],
@@ -133,6 +133,9 @@ final class CarController extends Controller
             return;
         }
 
+        if ($data['car_code'] === '') {
+            $data['car_code'] = (string) ($car['car_code'] ?? '');
+        }
         $imagePath = $car['image_url'];
         if (!empty($_FILES['image']['tmp_name'])) {
             $newPath = $this->handleUpload($_FILES['image'], $errors);
@@ -181,7 +184,7 @@ final class CarController extends Controller
         $this->redirect('/admin/xe');
     }
 
-    private function validate(array $post, array $files, bool $requireImage, array &$errors): array
+    private function validate(array $post, array $files, bool $requireImage, array &$errors, ?int $excludeId = null): array
     {
         $data = [];
         $name = trim((string) ($post['name'] ?? ''));
@@ -227,6 +230,91 @@ final class CarController extends Controller
             $errors['price'] = 'Giá phải là số nguyên dương.';
         }
         $data['price'] = $price === false ? 0 : $price;
+
+        $discountPrice = trim((string) ($post['discount_price'] ?? ''));
+        if ($discountPrice !== '') {
+            $discountPrice = filter_var($discountPrice, FILTER_VALIDATE_INT);
+            if ($discountPrice === false || $discountPrice <= 0 || $discountPrice > $data['price']) {
+                $errors['discount_price'] = 'Giá khuyến mãi phải lớn hơn 0 và không vượt giá niêm yết.';
+            }
+        }
+        $data['discount_price'] = $discountPrice === '' || $discountPrice === false ? null : $discountPrice;
+
+        $condition = (string) ($post['condition_type'] ?? 'new');
+        if (!in_array($condition, ['new', 'used'], true)) {
+            $errors['condition_type'] = 'Tình trạng xe không hợp lệ.';
+            $condition = 'new';
+        }
+        $data['condition_type'] = $condition;
+
+        $carCode = strtoupper(trim((string) ($post['car_code'] ?? '')));
+        if ($carCode !== '' && !preg_match('/^[A-Z0-9-]{3,40}$/', $carCode)) {
+            $errors['car_code'] = 'Mã xe chỉ gồm chữ in hoa, số và dấu gạch ngang.';
+        }
+        if ($carCode !== '' && (new Car())->carCodeExists($carCode, $excludeId)) {
+            $errors['car_code'] = 'Mã xe này đã được sử dụng.';
+        }
+        $data['car_code'] = $carCode;
+
+        $galleryLines = preg_split('/\r\n|\r|\n/', trim((string) ($post['gallery_urls'] ?? ''))) ?: [];
+        $gallery = [];
+        foreach ($galleryLines as $galleryUrl) {
+            $galleryUrl = trim($galleryUrl);
+            if ($galleryUrl === '') {
+                continue;
+            }
+            if (
+                mb_strlen($galleryUrl) > 500
+                || !(preg_match('#^https://#i', $galleryUrl) || preg_match('#^uploads/cars/[a-zA-Z0-9._-]+$#', $galleryUrl))
+            ) {
+                $errors['gallery_urls'] = 'Mỗi ảnh cần là đường dẫn https:// hoặc uploads/cars/tên-tệp.';
+                break;
+            }
+            $gallery[] = $galleryUrl;
+        }
+        $data['gallery_json'] = json_encode($gallery, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $videoUrl = trim((string) ($post['video_url'] ?? ''));
+        if ($videoUrl !== '' && (!filter_var($videoUrl, FILTER_VALIDATE_URL) || !preg_match('#^https://#i', $videoUrl))) {
+            $errors['video_url'] = 'Video cần có đường dẫn HTTPS hợp lệ.';
+        }
+        $data['video_url'] = $videoUrl;
+
+        $detailsJson = trim((string) ($post['details_json'] ?? ''));
+        if ($detailsJson === '') {
+            $detailsJson = '{}';
+        }
+        $details = json_decode($detailsJson, true);
+        if (!is_array($details) || json_last_error() !== JSON_ERROR_NONE) {
+            $errors['details_json'] = 'Thông tin kỹ thuật cần là JSON hợp lệ.';
+        } else {
+            foreach (['variants', 'options'] as $group) {
+                if (!isset($details[$group])) {
+                    continue;
+                }
+                if (!is_array($details[$group])) {
+                    $errors['details_json'] = 'Các nhóm phiên bản và tùy chọn phải là danh sách.';
+                    break;
+                }
+                foreach ($details[$group] as $entry) {
+                    $entryPrice = is_array($entry)
+                        ? filter_var($entry['price'] ?? 0, FILTER_VALIDATE_INT)
+                        : false;
+                    if (
+                        !is_array($entry)
+                        || !is_string($entry['name'] ?? null)
+                        || trim($entry['name']) === ''
+                        || mb_strlen($entry['name']) > 100
+                        || $entryPrice === false
+                        || $entryPrice < 0
+                    ) {
+                        $errors['details_json'] = 'Mỗi phiên bản/tùy chọn cần có tên và giá chênh lệch là số nguyên không âm.';
+                        break 2;
+                    }
+                }
+            }
+        }
+        $data['details_json'] = $detailsJson;
 
         $statuses = ['available', 'reserved', 'sold', 'hidden'];
         $status = trim((string) ($post['status'] ?? 'available'));

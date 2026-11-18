@@ -5,6 +5,11 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/Helpers/view.php';
 
 $title = $title ?? 'Showroom ô tô chính hãng';
+$cartItems = is_array($_SESSION['cart'] ?? null) ? $_SESSION['cart'] : [];
+$cartCount = array_sum(array_map(
+    static fn ($item): int => is_array($item) ? max(0, (int) ($item['quantity'] ?? 0)) : 0,
+    $cartItems
+));
 ?>
 <!doctype html>
 <html lang="vi">
@@ -53,6 +58,10 @@ $title = $title ?? 'Showroom ô tô chính hãng';
                 <a href="<?= e(url('/#ve-chung-toi')) ?>">Về chúng tôi</a>
             </nav>
 
+            <a class="cart-nav-link" href="<?= e(url('/gio-hang')) ?>" aria-label="Giỏ hàng, <?= e($cartCount) ?> xe">
+                Giỏ hàng <span><?= e($cartCount) ?></span>
+            </a>
+
             <?php if (isset($_SESSION['user'])): ?>
 
             <div class="account-nav">
@@ -84,6 +93,10 @@ $title = $title ?? 'Showroom ô tô chính hãng';
                             Thông tin hồ sơ
                         </a>
 
+                        <a href="<?= e(url('/tai-khoan/don-hang')) ?>">
+                            Đơn mua xe & đặt cọc
+                        </a>
+
                         <a href="<?= e(url('/yeu-thich')) ?>">
                             Danh sách yêu thích (<?= e(favoriteCount()) ?>)
                         </a>
@@ -94,6 +107,9 @@ $title = $title ?? 'Showroom ô tô chính hãng';
 
                         <a href="<?= e(url('/admin')) ?>">
                             Quản trị
+                        </a>
+                        <a href="<?= e(url('/admin/don-hang')) ?>">
+                            Theo dõi đơn xe
                         </a>
 
                         <?php endif; ?>

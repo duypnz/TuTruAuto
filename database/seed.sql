@@ -8,3 +8,7 @@ INSERT INTO cars (name,slug,brand,year,body_type,fuel,transmission,price,image_u
 ('Toyota Alphard Luxury','toyota-alphard-luxury','Toyota',2025,'MPV','Xăng','Tự động 8 cấp',4370000000,'https://images.unsplash.com/photo-1617469767053-d3b523a0b982?auto=format&fit=crop&w=1200&q=85','Giao xe trong tháng','Không gian thương gia rộng rãi, nâng tầm sự thoải mái cho mỗi hành khách.',1,'available'),
 ('Lexus RX 350 Premium','lexus-rx-350-premium','Lexus',2024,'SUV','Xăng','Tự động 8 cấp',3350000000,'https://images.unsplash.com/photo-1606016159991-dfe4f2746ad5?auto=format&fit=crop&w=1200&q=85','Đã kiểm định','SUV hạng sang với cabin yên tĩnh, chất liệu cao cấp và độ hoàn thiện tỉ mỉ.',0,'available'),
 ('Toyota Camry HEV Premium','toyota-camry-hev-premium','Toyota',2025,'Sedan','Hybrid','CVT',1460000000,'https://images.unsplash.com/photo-1621007947382-bb3c3994e3fb?auto=format&fit=crop&w=1200&q=85','Tiết kiệm nhiên liệu','Sedan hybrid hiện đại mang đến khả năng vận hành êm ái và hiệu quả nhiên liệu vượt trội.',0,'available');
+
+INSERT INTO car_vouchers (code,discount_type,discount_value,minimum_order,starts_at,ends_at,is_active)
+VALUES ('TUTRU5','percent',5,500000000,'2020-01-01 00:00:00','2035-12-31 23:59:59',1)
+ON DUPLICATE KEY UPDATE is_active = VALUES(is_active);
