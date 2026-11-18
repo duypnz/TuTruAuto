@@ -1305,9 +1305,6 @@ a {
         display: none
     }
 }
-
-
-/* ADMIN RESPONSIVE */
 @media (max-width: 640px) {
     .admin-page {
         padding: 42px 0 60px;
@@ -1596,13 +1593,91 @@ a {
     font-weight: 700;
     color: #315c43;
 }
-
-/* NAVIGATION */
-.nav-wrap {
-    justify-content: flex-start;
-    gap: clamp(20px, 3vw, 40px);
+  --ink: #17201d;
+  --muted: #77807b;
+  --paper: #f7f8f6;
+  --line: #e8ebe7;
+  --green: #234b3d;
+  --lime: #d7ef8b;
+  --serif: Georgia, "Times New Roman", serif;
 }
-
+* {
+  box-sizing: border-box;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--ink);
+  font-family: "DM Sans", Arial, sans-serif;
+  font-size: 15px;
+}
+a {
+  color: inherit;
+  text-decoration: none;
+}
+.container {
+  width: min(1180px, calc(100% - 48px));
+  margin: auto;
+}
+.topline {
+  height: 36px;
+  background: #17241f;
+  color: #d9dedb;
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.top-inner {
+  height: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.top-inner strong {
+  color: #fff;
+}
+.site-header {
+  height: 78px;
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid rgba(232, 235, 231, 0.8);
+  position: relative;
+  z-index: 5;
+}
+.nav-wrap {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font:
+    800 15px "Manrope",
+    sans-serif;
+  letter-spacing: 0.12em;
+}
+.brand-mark {
+  width: 34px;
+  height: 34px;
+  background: var(--green);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font: italic 24px var(--serif);
+  border-radius: 50%;
+}
+.brand small {
+  display: block;
+  font:
+    600 8px "DM Sans",
+    sans-serif;
+  letter-spacing: 0.34em;
+  margin-top: 1px;
+}
 .main-nav {
     flex: 1;
     justify-content: center;
@@ -1635,4 +1710,12 @@ a {
         border: 0;
         background: transparent;
     }
+  display: flex;
+  gap: 38px;
+  color: #5c6661;
+  font-size: 13px;
+}
+.main-nav a:hover,
+.footer a:hover {
+  color: #679047;
 }
