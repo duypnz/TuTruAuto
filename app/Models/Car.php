@@ -75,6 +75,35 @@ final class Car
         return $stmt->fetchAll();
     }
 
+    public function findByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map(
+                static fn (mixed $id): int => is_scalar($id) ? (int) $id : 0,
+                $ids
+            ),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = [];
+        $params = ['status' => 'available'];
+        foreach ($ids as $index => $id) {
+            $placeholder = 'car_id_' . $index;
+            $placeholders[] = ':' . $placeholder;
+            $params[$placeholder] = $id;
+        }
+        $stmt = $this->db->prepare(
+            'SELECT * FROM cars
+             WHERE status = :status AND id IN (' . implode(', ', $placeholders) . ')
+             ORDER BY id'
+        );
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
     public function findBySlug(string $slug): ?array
     {
         $stmt = $this->db->prepare(
@@ -164,22 +193,6 @@ final class Car
         $stmt->execute(['code' => strtoupper(trim($code))]);
 
         return $stmt->fetch() ?: null;
-    }
-
-    public function addInquiry(int $carId, ?int $userId, string $type, string $name, string $phone, string $message): void
-    {
-        $stmt = $this->db->prepare(
-            'INSERT INTO car_inquiries (car_id, user_id, inquiry_type, customer_name, phone, message)
-             VALUES (:car_id, :user_id, :type, :name, :phone, :message)'
-        );
-        $stmt->execute([
-            'car_id' => $carId,
-            'user_id' => $userId,
-            'type' => $type,
-            'name' => $name,
-            'phone' => $phone,
-            'message' => $message !== '' ? $message : null,
-        ]);
     }
 
     /**

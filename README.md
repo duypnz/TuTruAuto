@@ -9,13 +9,15 @@ Website giới thiệu và bán xe ô tô bằng PHP 8.1+, PDO, MySQL/MariaDB v�
 3. Sao chép `.env.example` thành `.env` và cập nhật thông tin MySQL nếu khác cấu hình mặc định.
 4. Mở `http://localhost/Tu-Tru-Auto/`.
 
-Trang chủ, danh sách xe, lọc/tìm kiếm và trang chi tiết dùng dữ liệu trong bảng `cars`. Ảnh mẫu được tải từ Unsplash nên cần kết nối internet để hiển thị.
+Trang chủ, danh sách xe, lọc/tìm kiếm, banner và trang chi tiết dùng dữ liệu trong bảng `cars`. Ảnh mẫu được tải từ Unsplash nên cần kết nối internet để hiển thị. Sau khi cài mới, chạy tiếp `database/migrations/005_admin_contacts_payment_catalog.sql` để nạp thêm xe mẫu, thư viện ảnh, thông số và danh mục.
 
 ### Cập nhật cơ sở dữ liệu hiện có
 
-Nếu website đã được cài đặt trước đó, chọn cơ sở dữ liệu `tu_tru_auto` trong phpMyAdmin và chạy một lần nội dung `database/migrations/002_car_details_and_sales.sql`. Migration bổ sung dữ liệu chi tiết xe, đánh giá, voucher và yêu cầu tư vấn. Với cài đặt mới, `database/schema.sql` đã có các bảng/cột mới; sau đó nhập `database/seed.sql`.
+Nếu website đã được cài đặt trước đó, chọn cơ sở dữ liệu `tu_tru_auto` trong phpMyAdmin và chạy lần lượt các migration `002_car_details_and_sales.sql`, `003_customer_orders.sql`, `004_order_delivery_details.sql` và `005_admin_contacts_payment_catalog.sql`. Migration 005 bổ sung quản lý danh mục, lưu thông tin thanh toán, hộp thư liên hệ và một số xe mẫu. Với cài đặt mới, `database/schema.sql` đã có cấu trúc mới; nhập `database/seed.sql` rồi chạy migration 005.
 
-Chạy thêm `database/migrations/003_customer_orders.sql` để bật giỏ hàng và theo dõi đơn. Khách hàng đăng nhập có thể xem lịch sử tại **Tài khoản → Đơn mua xe & đặt cọc**; quản trị viên xem tất cả đơn tại `/admin/don-hang` và cập nhật trạng thái **Chờ xác nhận**, **Đã đặt cọc**, **Đã mua xe** hoặc **Đã hủy**. Trạng thái đặt cọc/mua xe do nhân viên xác nhận thủ công, website chưa tích hợp cổng thanh toán.
+Khách hàng cần đăng nhập mới được đặt cọc; tài khoản quản trị không thể đặt cọc. Tiền cọc được tính tự động bằng 10% giá sau ưu đãi. Khách xem trạng thái, chi tiết, hướng dẫn chuyển khoản và lịch nhận xe tại **Tài khoản → Đơn đặt cọc của tôi**. Quản trị viên tìm kiếm đơn tại `/admin/don-hang`, xác nhận trạng thái và hẹn ngày giờ nhận xe. Cấu hình số tài khoản nhận tiền tại **Quản trị → Thanh toán**; giao dịch được nhân viên xác nhận thủ công, website chưa tích hợp cổng thanh toán.
+
+Quản trị viên có thanh điều hướng bên trái để quản lý xe, thêm thương hiệu/kiểu dáng, tài khoản, liên hệ của khách hàng, đơn đặt cọc và thông tin thanh toán. Form liên hệ tại trang chủ và yêu cầu tư vấn/lái thử/báo giá ở trang chi tiết xe đều xuất hiện trong **Quản trị → Liên hệ khách hàng**. Trang so sánh hỗ trợ hai hoặc ba xe; công cụ trả góp chỉ đưa ra ước tính theo lãi suất do khách nhập và không thay thế báo giá ngân hàng.
 
 ### Dữ liệu chi tiết xe trong trang quản trị
 

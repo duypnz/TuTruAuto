@@ -67,16 +67,34 @@ CREATE TABLE IF NOT EXISTS car_vouchers (
 
 CREATE TABLE IF NOT EXISTS car_inquiries (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-    car_id BIGINT UNSIGNED NOT NULL,
+    car_id BIGINT UNSIGNED NULL,
     user_id BIGINT UNSIGNED NULL,
-    inquiry_type ENUM('buy', 'deposit', 'test_drive', 'quote', 'advice') NOT NULL,
+    inquiry_type ENUM('buy', 'deposit', 'test_drive', 'quote', 'advice', 'contact') NOT NULL,
     customer_name VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
+    email VARCHAR(190) NULL,
     message TEXT NULL,
+    inquiry_status ENUM('new', 'contacted', 'closed') NOT NULL DEFAULT 'new',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     INDEX idx_car_inquiries_created (created_at),
-    CONSTRAINT fk_car_inquiries_car FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE CASCADE,
+    INDEX idx_car_inquiries_status (inquiry_status, created_at),
+    CONSTRAINT fk_car_inquiries_car FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE SET NULL,
     CONSTRAINT fk_car_inquiries_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS car_catalog_options (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    option_type ENUM('brand', 'body_type') NOT NULL,
+    name VARCHAR(80) NOT NULL,
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_car_catalog_option (option_type, name)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS site_settings (
+    setting_key VARCHAR(80) PRIMARY KEY,
+    setting_value VARCHAR(500) NOT NULL DEFAULT '',
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS customer_orders (
@@ -91,6 +109,9 @@ CREATE TABLE IF NOT EXISTS customer_orders (
     subtotal DECIMAL(15,0) NOT NULL,
     discount_total DECIMAL(15,0) NOT NULL DEFAULT 0,
     total DECIMAL(15,0) NOT NULL,
+    deposit_amount DECIMAL(15,0) NULL,
+    delivery_at DATETIME NULL,
+    payment_info_json TEXT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_customer_orders_user (user_id, created_at),

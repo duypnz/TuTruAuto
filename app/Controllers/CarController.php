@@ -6,13 +6,17 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Csrf;
 use App\Models\Car;
+use App\Models\CatalogOption;
 use App\Models\CustomerOrder;
+use App\Models\CustomerInquiry;
+use App\Models\SiteSetting;
 use Throwable;
 
 final class CarController extends Controller
 {
     public function index(): void
     {
+        $catalog = new CatalogOption();
         $cars = (new Car())->search([
             'keyword' => trim((string) ($_GET['q'] ?? '')),
             'brand' => trim((string) ($_GET['brand'] ?? '')),
@@ -21,7 +25,32 @@ final class CarController extends Controller
             'sort' => (string) ($_GET['sort'] ?? ''),
         ]);
 
-        $this->render('cars/index', ['cars' => $cars]);
+        $this->render('cars/index', [
+            'cars' => $cars,
+            'brands' => $catalog->values('brand'),
+            'bodyTypes' => $catalog->values('body_type'),
+        ]);
+    }
+
+    public function compare(): void
+    {
+        $rawIds = $_GET['ids'] ?? [];
+        if (is_string($rawIds)) {
+            $rawIds = explode(',', $rawIds);
+        }
+        $ids = is_array($rawIds) ? array_values(array_unique(array_filter(
+            array_map(static fn (mixed $id): int => is_scalar($id) ? (int) $id : 0, $rawIds),
+            static fn (int $id): bool => $id > 0
+        ))) : [];
+        $selectedIds = array_slice($ids, 0, 3);
+        $cars = new Car();
+        $selectedCars = $cars->findByIds($selectedIds);
+        $this->render('cars/compare', [
+            'title' => 'So sánh xe',
+            'selectedCars' => $selectedCars,
+            'availableCars' => $cars->search([]),
+            'selectedIds' => array_map(static fn (array $car): int => (int) $car['id'], $selectedCars),
+        ]);
     }
 
     public function show(array $params): void
@@ -49,12 +78,13 @@ final class CarController extends Controller
             'reviews' => (new Car())->reviews((int) $car['id']),
             'reviewSummary' => (new Car())->reviewSummary((int) $car['id']),
             'csrf' => Csrf::token(),
+            'isAdmin' => ($_SESSION['user']['role'] ?? '') === 'admin',
             'success' => $this->takeFlash('_success'),
             'error' => $this->takeFlash(),
         ]);
     }
 
-    public function purchaseAction(array $params): void
+    public function submitCarRequest(array $params): void
     {
         $cars = new Car();
         $car = $cars->findBySlug((string) ($params['slug'] ?? ''));
@@ -65,14 +95,23 @@ final class CarController extends Controller
         }
 
         $action = (string) ($_POST['action'] ?? '');
+        if ($action === 'deposit' && !$this->requireCustomer()) {
+            return;
+        }
+        if (!in_array($action, ['deposit', 'test_drive', 'quote', 'advice'], true)) {
+            http_response_code(400);
+            echo 'Yêu cầu không hợp lệ.';
+            return;
+        }
+        if ($action === 'deposit' && $car['status'] !== 'available') {
+            $_SESSION['_flash'] = 'Xe hiện không còn sẵn sàng để đặt cọc.';
+            $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
+        }
+
         $details = $this->decodeJson($car['details_json'] ?? null, []);
         $selection = $this->selectedOptions($details, $_POST);
         $unitPrice = (int) ($car['discount_price'] ?: $car['price']) + $selection['delta'];
-        $quantity = filter_var($_POST['quantity'] ?? 1, FILTER_VALIDATE_INT);
-        if ($quantity === false || $quantity < 1 || $quantity > 5) {
-            $_SESSION['_flash'] = 'Số lượng xe phải từ 1 đến 5.';
-            $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
-        }
+        $quantity = 1;
         $voucherCode = strtoupper(trim((string) ($_POST['voucher_code'] ?? '')));
         $discount = 0;
         if ($voucherCode !== '') {
@@ -87,65 +126,22 @@ final class CarController extends Controller
                 : min($subtotal, (int) $voucher['discount_value']);
         }
 
-        if ($action === 'cart') {
-            if ($car['status'] !== 'available') {
-                $_SESSION['_flash'] = 'Xe hiện không còn sẵn sàng để thêm vào giỏ.';
-                $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
-            }
-            $key = (int) $car['id'] . ':' . hash('sha256', json_encode([$selection['labels'], $voucherCode], JSON_UNESCAPED_UNICODE) ?: '');
-            $cart = $_SESSION['cart'] ?? [];
-            if (!is_array($cart)) {
-                $cart = [];
-            }
-            $existingQuantity = (int) ($cart[$key]['quantity'] ?? 0);
-            if ($existingQuantity + $quantity > 5) {
-                $_SESSION['_flash'] = 'Tối đa 5 xe cho mỗi phiên bản trong giỏ hàng.';
-                $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
-            }
-            if ($voucherCode !== '') {
-                $subtotal = $unitPrice * ($existingQuantity + $quantity);
-                $discount = $voucher['discount_type'] === 'percent'
-                    ? min($subtotal, (int) round($subtotal * (float) $voucher['discount_value'] / 100))
-                    : min($subtotal, (int) $voucher['discount_value']);
-            }
-            $cart[$key] = [
-                'car_id' => (int) $car['id'],
-                'slug' => (string) $car['slug'],
-                'name' => (string) $car['name'],
-                'image_url' => (string) $car['image_url'],
-                'quantity' => $existingQuantity + $quantity,
-                'unit_price' => $unitPrice,
-                'options' => $selection['labels'],
-                'voucher_code' => $voucherCode,
-                'discount_total' => $discount,
-            ];
-            $_SESSION['cart'] = $cart;
-            $_SESSION['_success'] = 'Đã thêm xe vào giỏ hàng.';
-            $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
-        }
-
         $types = [
-            'buy' => 'buy',
-            'deposit' => 'deposit',
             'test_drive' => 'test_drive',
             'quote' => 'quote',
             'advice' => 'advice',
         ];
-        if (!isset($types[$action])) {
-            http_response_code(400);
-            echo 'Yêu cầu không hợp lệ.';
-            return;
-        }
-        if (in_array($action, ['buy', 'deposit'], true) && $car['status'] !== 'available') {
-            $_SESSION['_flash'] = 'Xe hiện không còn sẵn sàng để mua hoặc đặt cọc.';
-            $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
-        }
 
         $name = trim((string) ($_POST['customer_name'] ?? $_SESSION['user']['name'] ?? ''));
         $phone = trim((string) ($_POST['phone'] ?? ''));
+        $email = strtolower(trim((string) ($_POST['email'] ?? $_SESSION['user']['email'] ?? '')));
         $message = trim((string) ($_POST['message'] ?? ''));
-        if (mb_strlen($name) < 2 || mb_strlen($name) > 120 || !preg_match('/^[0-9+().\s-]{7,30}$/', $phone)) {
-            $_SESSION['_flash'] = 'Vui lòng nhập họ tên và số điện thoại hợp lệ.';
+        if (
+            mb_strlen($name) < 2 || mb_strlen($name) > 120
+            || !preg_match('/^[0-9+().\s-]{7,30}$/', $phone)
+            || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))
+        ) {
+            $_SESSION['_flash'] = 'Vui lòng nhập họ tên, điện thoại và email hợp lệ.';
             $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
         }
 
@@ -154,13 +150,14 @@ final class CarController extends Controller
             . '; giá dự kiến: ' . number_format(($unitPrice * $quantity) - $discount, 0, ',', '.') . ' VND.'
             . ($voucherCode !== '' ? '; voucher: ' . $voucherCode : '')
             . ($message !== '' ? ' ' . $message : '');
-        $userId = isset($_SESSION['user']['id']) ? (int) $_SESSION['user']['id'] : null;
-        if (in_array($action, ['buy', 'deposit'], true)) {
-            $orderType = $action === 'deposit' ? 'deposit' : 'purchase';
+        $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
+            ? (int) $_SESSION['user']['id']
+            : null;
+        if ($action === 'deposit') {
             $orderId = (new CustomerOrder())->create([
                 'user_id' => $userId,
-                'order_type' => $orderType,
-                'status' => $orderType === 'deposit' ? 'deposit_pending' : 'pending',
+                'order_type' => 'deposit',
+                'status' => 'deposit_pending',
                 'customer_name' => $name,
                 'phone' => $phone,
                 'message' => $description,
@@ -168,6 +165,9 @@ final class CarController extends Controller
                 'subtotal' => $unitPrice * $quantity,
                 'discount_total' => $discount,
                 'total' => ($unitPrice * $quantity) - $discount,
+                'deposit_amount' => max(1, (int) round((($unitPrice * $quantity) - $discount) * 0.1)),
+                'delivery_at' => null,
+                'payment_info' => (new SiteSetting())->paymentDetails(),
             ], [[
                 'car_id' => (int) $car['id'],
                 'name' => (string) $car['name'],
@@ -176,26 +176,53 @@ final class CarController extends Controller
                 'unit_price' => $unitPrice,
                 'options' => $selection['labels'],
             ]]);
-            $_SESSION['_success'] = 'Đã ghi nhận đơn #' . $orderId . '. '
-                . ($orderType === 'deposit'
-                    ? 'Trạng thái hiện tại: chờ xác nhận đặt cọc.'
-                    : 'Trạng thái hiện tại: chờ xác nhận mua xe.');
-            $this->redirect(
-                isset($_SESSION['user'])
-                && ($_SESSION['user']['role'] ?? '') === 'customer'
-                    ? '/tai-khoan/don-hang'
-                    : '/xe/' . rawurlencode((string) $car['slug'])
-            );
+            $_SESSION['_success'] = 'Đã tạo yêu cầu đặt cọc #' . $orderId . '. Tiền cọc bằng 10% giá xe.';
+            $this->redirect('/tai-khoan/don-hang/' . $orderId);
         }
-        $cars->addInquiry((int) $car['id'], $userId, $types[$action], $name, $phone, $description);
+        (new CustomerInquiry())->create(
+            (int) $car['id'],
+            $userId,
+            $types[$action],
+            $name,
+            $phone,
+            $email,
+            $description
+        );
         $_SESSION['_success'] = match ($action) {
             'test_drive' => 'Đã nhận đăng ký lái thử. Nhân viên sẽ liên hệ xác nhận lịch.',
             'quote' => 'Đã nhận yêu cầu báo giá. Chúng tôi sẽ liên hệ sớm.',
             'advice' => 'Đã gửi yêu cầu tư vấn. Chúng tôi sẽ gọi lại cho bạn.',
-            'deposit' => 'Đã ghi nhận yêu cầu đặt cọc. Nhân viên sẽ liên hệ xác nhận.',
-            default => 'Đã ghi nhận yêu cầu mua xe. Nhân viên sẽ liên hệ xác nhận.',
+            default => 'Đã gửi yêu cầu tư vấn.',
         };
         $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
+    }
+
+    public function submitContact(): void
+    {
+        if (!Csrf::valid($_POST['_csrf'] ?? null)) {
+            http_response_code(419);
+            echo 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang.';
+            return;
+        }
+        $name = trim((string) ($_POST['customer_name'] ?? ''));
+        $phone = trim((string) ($_POST['phone'] ?? ''));
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $message = trim((string) ($_POST['message'] ?? ''));
+        if (
+            mb_strlen($name) < 2 || mb_strlen($name) > 120
+            || !preg_match('/^[0-9+().\s-]{7,30}$/', $phone)
+            || !filter_var($email, FILTER_VALIDATE_EMAIL)
+            || mb_strlen($message) > 2000
+        ) {
+            $_SESSION['_flash'] = 'Vui lòng kiểm tra họ tên, số điện thoại, email và nội dung liên hệ.';
+            $this->redirect('/#lien-he');
+        }
+        $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
+            ? (int) $_SESSION['user']['id']
+            : null;
+        (new CustomerInquiry())->create(null, $userId, 'contact', $name, $phone, $email, $message);
+        $_SESSION['_success'] = 'Đã nhận thông tin liên hệ. Nhân viên sẽ gọi lại sớm.';
+        $this->redirect('/#lien-he');
     }
 
     public function submitReview(array $params): void

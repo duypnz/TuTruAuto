@@ -17,6 +17,7 @@ $exteriorColors = is_array($colors['exterior'] ?? null) ? $colors['exterior'] : 
 $interiorColors = is_array($colors['interior'] ?? null) ? $colors['interior'] : ['Đen', 'Be', 'Nâu'];
 $options = is_array($details['options'] ?? null) ? $details['options'] : [];
 $price = (int) ($car['discount_price'] ?: $car['price']);
+$isAdmin = $isAdmin ?? false;
 $stockLabels = ['available' => 'Còn hàng', 'reserved' => 'Đang giữ chỗ', 'sold' => 'Đã bán'];
 $stockLabel = $stockLabels[$car['status']] ?? 'Liên hệ showroom';
 $conditionLabel = ($car['condition_type'] ?? 'new') === 'used' ? 'Xe đã qua sử dụng' : 'Xe mới';
@@ -83,6 +84,23 @@ ob_start();
                     <img id="car-main-image" src="<?= e(image_src($car['gallery'][0])) ?>" alt="<?= e($car['name']) ?>">
                     <span class="image-badge"><?= e($car['badge'] ?: $stockLabel) ?></span>
                 </div>
+
+                <section class="installment-calculator" id="tra-gop" data-installment-calculator>
+                    <div><span class="eyebrow"><span></span> ƯỚC TÍNH THAM KHẢO</span><h2>Tính khoản trả góp</h2><p>Chưa gồm phí, bảo hiểm và điều kiện duyệt vay của ngân hàng.</p></div>
+                    <div class="installment-fields">
+                        <label>Trả trước (%)
+                            <input name="down_payment_percent" type="number" min="10" max="80" step="1" value="10" required>
+                        </label>
+                        <label>Lãi suất năm (%)
+                            <input name="annual_rate" type="number" min="0" max="40" step="0.1" placeholder="Nhập theo tư vấn ngân hàng" required>
+                        </label>
+                        <label>Thời hạn vay
+                            <select name="term_months"><?php foreach ([12, 24, 36, 48, 60, 72, 84] as $term): ?><option value="<?= $term ?>" <?= $term === 60 ? 'selected' : '' ?>><?= $term ?> tháng</option><?php endforeach; ?></select>
+                        </label>
+                    </div>
+                    <button class="button button-outline" type="button" data-calculate-installment>Tính khoản trả hàng tháng</button>
+                    <p class="installment-result" data-installment-result aria-live="polite">Nhập lãi suất được ngân hàng tư vấn để xem khoản trả dự kiến.</p>
+                </section>
                 <div class="detail-thumbnails" aria-label="Thư viện ảnh xe">
                     <?php foreach ($car['gallery'] as $index => $image): ?>
                         <button class="detail-thumbnail <?= $index === 0 ? 'is-active' : '' ?>" type="button"
@@ -136,12 +154,12 @@ ob_start();
                     <?php else: ?>
                         <a class="favorite-toggle" href="<?= e(url('/dang-nhap')) ?>">♡ Yêu thích</a>
                     <?php endif; ?>
-                    <button class="detail-icon-action" type="button" data-compare-car="<?= e($car['id']) ?>" aria-pressed="false">⇄ So sánh</button>
+                    <button class="detail-icon-action" type="button" data-compare-car="<?= e($car['id']) ?>" data-compare-url="<?= e(url('/so-sanh')) ?>" aria-pressed="false">⇄ So sánh</button>
                     <button class="detail-icon-action" type="button" data-share-car>↗ Chia sẻ</button>
                 </div>
 
                 <form id="car-order-form" class="car-order-form" method="post"
-                      action="<?= e(url('/xe/' . $car['slug'] . '/mua')) ?>">
+                      action="<?= e(url('/xe/' . $car['slug'] . '/yeu-cau')) ?>">
                     <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
                     <div class="variant-grid">
                         <label>Phiên bản
@@ -152,9 +170,6 @@ ob_start();
                                     </option>
                                 <?php endforeach; ?>
                             </select>
-                        </label>
-                        <label>Số lượng
-                            <input name="quantity" type="number" min="1" max="5" value="1" required>
                         </label>
                     </div>
 
@@ -195,14 +210,20 @@ ob_start();
                     </div>
 
                     <div class="purchase-actions">
-                        <button class="button button-dark" name="action" value="cart" type="submit" <?= $car['status'] !== 'available' ? 'disabled' : '' ?>>Thêm vào giỏ hàng</button>
-                        <button class="button button-light" name="action" value="buy" type="submit" <?= $car['status'] !== 'available' ? 'disabled' : '' ?>>Mua ngay</button>
-                        <button class="button button-outline" name="action" value="deposit" type="submit" <?= $car['status'] !== 'available' ? 'disabled' : '' ?>>Đặt cọc</button>
+                        <?php if (isCustomerLoggedIn()): ?>
+                            <button class="button button-dark" name="action" value="deposit" type="submit" <?= $car['status'] !== 'available' ? 'disabled' : '' ?>>Đặt cọc xe</button>
+                        <?php elseif ($isAdmin): ?>
+                            <p class="deposit-login-notice">Tài khoản quản trị chỉ dùng quản lý website, không thể đặt cọc xe.</p>
+                        <?php else: ?>
+                            <a class="button button-dark" href="<?= e(url('/dang-nhap')) ?>">Đăng nhập để đặt cọc</a>
+                        <?php endif; ?>
                     </div>
+                    <?php if (isCustomerLoggedIn()): ?><p class="deposit-amount-preview" data-deposit-preview>Tiền cọc dự kiến (10%): <strong><?= money((int) round($price * 0.1)) ?></strong></p><?php endif; ?>
                     <div class="contact-fields">
                         <label>Họ tên<input name="customer_name" maxlength="120" value="<?= e($_SESSION['user']['name'] ?? '') ?>" placeholder="Tên của bạn"></label>
                         <label>Số điện thoại<input name="phone" type="tel" maxlength="30" placeholder="Số điện thoại liên hệ"></label>
                     </div>
+                    <label>Email (để nhận thông tin đơn)<input name="email" type="email" maxlength="190" value="<?= e($_SESSION['user']['email'] ?? '') ?>" placeholder="email@example.com"></label>
                     <label class="message-field">Ghi chú<textarea name="message" rows="2" maxlength="1000" placeholder="Thời gian lái thử hoặc yêu cầu thêm"></textarea></label>
                     <div class="purchase-secondary">
                         <button type="submit" name="action" value="test_drive">Đăng ký lái thử</button>
@@ -230,7 +251,7 @@ ob_start();
                         'transmission' => $car['transmission'],
                         'fuel' => $car['fuel'],
                         'category' => $car['body_type'],
-                        default => 'Liên hệ để biết thêm',
+                        default => 'Chưa cập nhật',
                     }; ?>
                     <div><span><?= e($label) ?></span><strong><?= e($value) ?></strong></div>
                 <?php endforeach; ?>
@@ -239,6 +260,7 @@ ob_start();
                 <div><span>Tình trạng</span><strong><?= e($conditionLabel) ?></strong></div>
                 <div><span>Mã xe</span><strong><?= e($car['car_code'] ?: 'TTA-' . str_pad((string) $car['id'], 6, '0', STR_PAD_LEFT)) ?></strong></div>
             </div>
+            <p class="specification-note">Thông số tham khảo theo phiên bản; vui lòng đối chiếu cấu hình và giấy tờ của xe thực tế trước khi giao dịch.</p>
         </section>
 
         <section class="feature-section">
@@ -248,7 +270,7 @@ ob_start();
                     <?php $items = is_array($details[$key] ?? null) ? $details[$key] : []; ?>
                     <article class="feature-card"><h3><span><?= e($feature['icon']) ?></span><?= e($feature['title']) ?></h3>
                         <?php if ($items): ?><ul><?php foreach ($items as $item): ?><li><span aria-hidden="true">✓</span><?= e($item) ?></li><?php endforeach; ?></ul>
-                        <?php else: ?><p>Thông tin trang bị đang được cập nhật. Vui lòng liên hệ tư vấn để biết cấu hình chính xác.</p><?php endif; ?>
+                        <?php else: ?><p>Chưa có dữ liệu trang bị cho xe này.</p><?php endif; ?>
                     </article>
                 <?php endforeach; ?>
             </div>
@@ -261,7 +283,7 @@ ob_start();
                 <button type="button" role="tab" id="tab-pros" aria-controls="panel-pros" aria-selected="false">Ưu & nhược điểm</button>
             </div>
             <div id="panel-description" class="tab-panel" role="tabpanel" aria-labelledby="tab-description">
-                <p><?= nl2br(e($car['description'] ?: 'Liên hệ showroom để nhận thông tin chi tiết về mẫu xe.')) ?></p>
+                <p><?= nl2br(e($car['description'] ?: 'Thông tin mô tả đang được cập nhật.')) ?></p>
             </div>
             <div id="panel-highlights" class="tab-panel" role="tabpanel" aria-labelledby="tab-highlights" hidden>
                 <ul><?php foreach ((array) ($details['highlights'] ?? ['Thiết kế hiện đại', 'Tư vấn cấu hình và chi phí minh bạch', 'Hỗ trợ lái thử tại showroom']) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul>

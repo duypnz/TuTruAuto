@@ -6,6 +6,7 @@ namespace App\Controllers\Admin;
 use App\Core\Controller;
 use App\Core\Csrf;
 use App\Models\Car;
+use App\Models\CatalogOption;
 
 final class CarController extends Controller
 {
@@ -22,7 +23,7 @@ final class CarController extends Controller
     public function createForm(): void
     {
         $this->requireAdmin();
-        $this->render('admin/cars/form', [
+        $this->renderCarForm([
             'title' => 'Thêm xe mới',
             'car' => null,
             'errors' => [],
@@ -36,7 +37,7 @@ final class CarController extends Controller
         $this->requireAdmin();
         if (!Csrf::valid($_POST['_csrf'] ?? null)) {
             http_response_code(419);
-            $this->render('admin/cars/form', [
+            $this->renderCarForm([
                 'title' => 'Thêm xe mới',
                 'car' => null,
                 'errors' => ['_form' => 'Phiên làm việc đã hết hạn. Vui lòng thử lại.'],
@@ -49,7 +50,7 @@ final class CarController extends Controller
         $errors = [];
         $data = $this->validate($_POST, $_FILES, true, $errors);
         if ($errors) {
-            $this->render('admin/cars/form', [
+            $this->renderCarForm([
                 'title' => 'Thêm xe mới',
                 'car' => null,
                 'errors' => $errors,
@@ -61,7 +62,7 @@ final class CarController extends Controller
 
         $imagePath = $this->handleUpload($_FILES['image'] ?? [], $errors);
         if ($errors) {
-            $this->render('admin/cars/form', [
+            $this->renderCarForm([
                 'title' => 'Thêm xe mới',
                 'car' => null,
                 'errors' => $errors,
@@ -88,7 +89,7 @@ final class CarController extends Controller
             $this->render('errors/404');
             return;
         }
-        $this->render('admin/cars/form', [
+        $this->renderCarForm([
             'title' => 'Sửa xe: ' . $car['name'],
             'car' => $car,
             'errors' => [],
@@ -110,7 +111,7 @@ final class CarController extends Controller
 
         if (!Csrf::valid($_POST['_csrf'] ?? null)) {
             http_response_code(419);
-            $this->render('admin/cars/form', [
+            $this->renderCarForm([
                 'title' => 'Sửa xe: ' . $car['name'],
                 'car' => $car,
                 'errors' => ['_form' => 'Phiên làm việc đã hết hạn. Vui lòng thử lại.'],
@@ -123,7 +124,7 @@ final class CarController extends Controller
         $errors = [];
         $data = $this->validate($_POST, $_FILES, false, $errors, $id);
         if ($errors) {
-            $this->render('admin/cars/form', [
+            $this->renderCarForm([
                 'title' => 'Sửa xe: ' . $car['name'],
                 'car' => $car,
                 'errors' => $errors,
@@ -140,7 +141,7 @@ final class CarController extends Controller
         if (!empty($_FILES['image']['tmp_name'])) {
             $newPath = $this->handleUpload($_FILES['image'], $errors);
             if ($errors) {
-                $this->render('admin/cars/form', [
+                $this->renderCarForm([
                     'title' => 'Sửa xe: ' . $car['name'],
                     'car' => $car,
                     'errors' => $errors,
@@ -194,7 +195,7 @@ final class CarController extends Controller
         $data['name'] = $name;
 
         $brand = trim((string) ($post['brand'] ?? ''));
-        if ($brand === '' || mb_strlen($brand) > 80) {
+        if (!in_array($brand, (new CatalogOption())->values('brand'), true) || mb_strlen($brand) > 80) {
             $errors['brand'] = 'Vui lòng chọn/nhập thương hiệu hợp lệ.';
         }
         $data['brand'] = $brand;
@@ -205,7 +206,7 @@ final class CarController extends Controller
         }
         $data['year'] = $year === false ? 0 : $year;
 
-        $bodyTypes = ['SUV', 'Sedan', 'MPV', 'Coupe', 'Hatchback', 'Pickup'];
+        $bodyTypes = (new CatalogOption())->values('body_type');
         $bodyType = trim((string) ($post['body_type'] ?? ''));
         if (!in_array($bodyType, $bodyTypes, true)) {
             $errors['body_type'] = 'Kiểu dáng không hợp lệ.';
@@ -349,6 +350,15 @@ final class CarController extends Controller
         }
 
         return $data;
+    }
+
+    private function renderCarForm(array $data): void
+    {
+        $catalog = new CatalogOption();
+        $this->render('admin/cars/form', $data + [
+            'brands' => $catalog->values('brand'),
+            'bodyTypes' => $catalog->values('body_type'),
+        ]);
     }
 
     private function handleUpload(array $file, array &$errors): ?string

@@ -11,6 +11,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const heroCarousel = document.querySelector('[data-hero-carousel]');
+    if (heroCarousel) {
+        const slides = Array.from(heroCarousel.querySelectorAll('.hero-slide'));
+        const dots = Array.from(document.querySelectorAll('[data-hero-dot]'));
+        let currentSlide = slides.findIndex((slide) => slide.classList.contains('is-active'));
+        if (currentSlide < 0) currentSlide = 0;
+        const showSlide = (index) => {
+            currentSlide = (index + slides.length) % slides.length;
+            slides.forEach((slide, slideIndex) => {
+                const active = slideIndex === currentSlide;
+                slide.classList.toggle('is-active', active);
+                slide.setAttribute('aria-hidden', String(!active));
+            });
+            dots.forEach((dot, dotIndex) => dot.setAttribute('aria-current', String(dotIndex === currentSlide)));
+        };
+        document.querySelector('[data-hero-prev]')?.addEventListener('click', () => showSlide(currentSlide - 1));
+        document.querySelector('[data-hero-next]')?.addEventListener('click', () => showSlide(currentSlide + 1));
+        dots.forEach((dot) => dot.addEventListener('click', () => showSlide(Number(dot.dataset.heroDot))));
+        if (slides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            let timer = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+            heroCarousel.addEventListener('mouseenter', () => window.clearInterval(timer));
+            heroCarousel.addEventListener('mouseleave', () => {
+                window.clearInterval(timer);
+                timer = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+            });
+        }
+    }
+
     // Menu tài khoản
     const accountMenu = document.querySelector('.account-menu');
     const accountTrigger = document.querySelector('.account-trigger');
@@ -106,10 +134,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const orderForm = document.querySelector('#car-order-form');
+    let appliedVoucherDiscount = 0;
     if (orderForm) {
         const priceElement = document.querySelector('#detail-price');
         const variantSelect = orderForm.querySelector('#car-variant');
         const optionInputs = orderForm.querySelectorAll('.extra-options input[type="checkbox"]');
+        const depositPreview = orderForm.querySelector('[data-deposit-preview] strong');
         const updatePrice = () => {
             if (!priceElement) return 0;
             const selectedVariant = variantSelect ? variantSelect.selectedOptions[0] : null;
@@ -122,12 +152,22 @@ document.addEventListener('DOMContentLoaded', () => {
             if (priceText) priceElement.appendChild(priceText);
             return amount;
         };
-        if (variantSelect) variantSelect.addEventListener('change', updatePrice);
-        optionInputs.forEach((option) => option.addEventListener('change', updatePrice));
+        const updateDepositPreview = () => {
+            const amount = Math.max(0, updatePrice() - appliedVoucherDiscount);
+            if (depositPreview) depositPreview.textContent = new Intl.NumberFormat('vi-VN').format(Math.round(amount * 0.1)) + ' ₫';
+        };
+        if (variantSelect) variantSelect.addEventListener('change', () => {
+            appliedVoucherDiscount = 0;
+            updateDepositPreview();
+        });
+        optionInputs.forEach((option) => option.addEventListener('change', () => {
+            appliedVoucherDiscount = 0;
+            updateDepositPreview();
+        }));
 
         orderForm.addEventListener('submit', (event) => {
             const submitter = event.submitter;
-            if (!submitter || submitter.value === 'cart') return;
+            if (!submitter || submitter.value !== 'deposit') return;
             const name = orderForm.querySelector('[name="customer_name"]');
             const phone = orderForm.querySelector('[name="phone"]');
             if (!name.value.trim() || !phone.value.trim()) {
@@ -144,8 +184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = document.querySelector('#voucher-result');
             const code = document.querySelector('#voucher-code');
             const csrf = orderForm.querySelector('[name="_csrf"]');
-            const quantity = Number(orderForm.querySelector('[name="quantity"]').value || 1);
-            const price = updateCarPrice(orderForm) * quantity;
+            const price = updateCarPrice(orderForm);
             result.textContent = 'Đang kiểm tra mã...';
             result.classList.remove('is-success', 'is-error');
             try {
@@ -157,10 +196,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 const data = await response.json();
                 result.textContent = data.message;
                 result.classList.add(data.valid ? 'is-success' : 'is-error');
+                appliedVoucherDiscount = data.valid ? Number(data.discount) : 0;
+                if (depositPreview) {
+                    const discountedPrice = Math.max(0, price - appliedVoucherDiscount);
+                    depositPreview.textContent = new Intl.NumberFormat('vi-VN').format(Math.round(discountedPrice * 0.1)) + ' ₫';
+                }
             } catch (error) {
+                appliedVoucherDiscount = 0;
+                const depositPreview = orderForm.querySelector('[data-deposit-preview] strong');
+                if (depositPreview) depositPreview.textContent = new Intl.NumberFormat('vi-VN').format(Math.round(price * 0.1)) + ' ₫';
                 result.textContent = 'Không thể kiểm tra mã lúc này. Vui lòng thử lại.';
                 result.classList.add('is-error');
             }
+        });
+    }
+
+    const installmentCalculator = document.querySelector('[data-installment-calculator]');
+    if (installmentCalculator) {
+        const result = installmentCalculator.querySelector('[data-installment-result]');
+        installmentCalculator.querySelector('[data-calculate-installment]')?.addEventListener('click', () => {
+            const downPayment = Number(installmentCalculator.querySelector('[name="down_payment_percent"]').value);
+            const rateInput = installmentCalculator.querySelector('[name="annual_rate"]');
+            const annualRate = Number(rateInput.value);
+            const months = Number(installmentCalculator.querySelector('[name="term_months"]').value);
+            const price = orderForm ? updateCarPrice(orderForm) : Number(document.querySelector('#detail-price')?.dataset.basePrice || 0);
+            if (!Number.isFinite(downPayment) || downPayment < 10 || downPayment > 80 || !rateInput.value.trim() || !Number.isFinite(annualRate) || annualRate < 0 || annualRate > 40 || !price || !months) {
+                result.textContent = 'Nhập tỷ lệ trả trước từ 10%-80% và lãi suất năm từ 0%-40% theo tư vấn ngân hàng.';
+                result.classList.add('is-error');
+                return;
+            }
+            const principal = price * (1 - downPayment / 100);
+            const monthlyRate = annualRate / 1200;
+            const monthlyPayment = monthlyRate === 0
+                ? principal / months
+                : principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months));
+            result.textContent = 'Dự kiến khoảng ' + new Intl.NumberFormat('vi-VN').format(Math.round(monthlyPayment)) + ' ₫/tháng trong ' + months + ' tháng. Chưa gồm phí, bảo hiểm và điều kiện duyệt vay.';
+            result.classList.remove('is-error');
         });
     }
 
@@ -191,17 +262,37 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-compare-car]').forEach((button) => {
         button.addEventListener('click', () => {
             try {
-                const compare = JSON.parse(localStorage.getItem('tuTruCompare') || '[]');
+                const stored = JSON.parse(localStorage.getItem('tuTruCompare') || '[]');
+                const compare = Array.isArray(stored) ? stored.map(String).filter((item) => /^\d+$/.test(item)) : [];
                 const id = String(button.dataset.compareCar);
                 const next = compare.includes(id) ? compare.filter((item) => item !== id) : [...compare, id].slice(-3);
                 localStorage.setItem('tuTruCompare', JSON.stringify(next));
-                button.setAttribute('aria-pressed', String(next.includes(id)));
-                button.textContent = next.includes(id) ? '✓ Đã chọn so sánh' : '⇄ So sánh';
+                window.location.href = button.dataset.compareUrl + '?ids=' + encodeURIComponent(next.join(','));
             } catch (error) {
                 window.alert('Trình duyệt không cho phép lưu danh sách so sánh.');
             }
         });
     });
+
+    const compareForm = document.querySelector('[data-compare-select-form]');
+    if (compareForm) {
+        compareForm.addEventListener('submit', (event) => {
+            const ids = Array.from(compareForm.querySelectorAll('[data-compare-select]'))
+                .map((select) => select.value)
+                .filter(Boolean);
+            if (ids.length < 2 || new Set(ids).size !== ids.length) {
+                event.preventDefault();
+                window.alert(ids.length < 2 ? 'Hãy chọn ít nhất hai xe.' : 'Mỗi xe chỉ được chọn một lần.');
+                return;
+            }
+            try {
+                localStorage.setItem('tuTruCompare', JSON.stringify(ids));
+            } catch (error) {
+                window.alert('Trình duyệt không cho phép lưu danh sách so sánh.');
+                event.preventDefault();
+            }
+        });
+    }
 
     document.querySelectorAll('[data-share-car]').forEach((button) => {
         button.addEventListener('click', async () => {

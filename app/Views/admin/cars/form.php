@@ -6,6 +6,8 @@ $title = $title ?? 'Xe';
 $car = $car ?? null;
 $errors = $errors ?? [];
 $old = $old ?? [];
+$brands = $brands ?? [];
+$bodyTypes = $bodyTypes ?? [];
 $csrf = $csrf ?? Csrf::token();
 ob_start();
 $val = static function (string $key, string $default = '') use ($car, $old): string {
@@ -50,14 +52,14 @@ if ($detailsValue === '' && is_array($car) && !empty($car['details_json'])) {
             <label>Tên xe *<input type="text" name="name" maxlength="180" required value="<?= e($val('name')) ?>"><?php if (isset($errors['name'])): ?><small style="color:#c0392b;"><?= e($errors['name']) ?></small><?php endif; ?></label>
             <label>Thương hiệu *<select name="brand" required>
                 <option value="">-- Chọn --</option>
-                <?php foreach (['Toyota','Mercedes-Benz','BMW','VinFast','Volvo','Lexus','Hyundai','Honda','Ford','Mazda'] as $b): ?>
+                <?php foreach ($brands as $b): ?>
                     <option value="<?= e($b) ?>" <?= $val('brand') === $b ? 'selected' : '' ?>><?= e($b) ?></option>
                 <?php endforeach; ?>
             </select><?php if (isset($errors['brand'])): ?><small style="color:#c0392b;"><?= e($errors['brand']) ?></small><?php endif; ?></label>
             <label>Năm sản xuất *<input type="number" name="year" min="1990" max="2100" required value="<?= e($val('year')) ?>"><?php if (isset($errors['year'])): ?><small style="color:#c0392b;"><?= e($errors['year']) ?></small><?php endif; ?></label>
             <label>Kiểu dáng *<select name="body_type" required>
                 <option value="">-- Chọn --</option>
-                <?php foreach (['SUV','Sedan','MPV','Coupe','Hatchback','Pickup'] as $t): ?>
+                <?php foreach ($bodyTypes as $t): ?>
                     <option value="<?= e($t) ?>" <?= $val('body_type') === $t ? 'selected' : '' ?>><?= e($t) ?></option>
                 <?php endforeach; ?>
             </select><?php if (isset($errors['body_type'])): ?><small style="color:#c0392b;"><?= e($errors['body_type']) ?></small><?php endif; ?></label>
@@ -84,7 +86,7 @@ if ($detailsValue === '' && is_array($car) && !empty($car['details_json'])) {
             <label>Mô tả<textarea name="description" rows="4"><?= e($val('description')) ?></textarea></label>
             <label>Ảnh thư viện (mỗi dòng một URL HTTPS hoặc đường dẫn uploads/cars/...)<textarea name="gallery_urls" rows="4" placeholder="https://..."><?= e($galleryValue) ?></textarea><?php if (isset($errors['gallery_urls'])): ?><small style="color:#c0392b;"><?= e($errors['gallery_urls']) ?></small><?php endif; ?></label>
             <label>Video giới thiệu (URL HTTPS)<input type="url" name="video_url" maxlength="1000" value="<?= e($val('video_url')) ?>" placeholder="https://..."><?php if (isset($errors['video_url'])): ?><small style="color:#c0392b;"><?= e($errors['video_url']) ?></small><?php endif; ?></label>
-            <label>Thông số, phiên bản và trang bị (JSON)<textarea name="details_json" rows="18" spellcheck="false"><?= e($detailsValue ?: '{}') ?></textarea><small>Gồm các nhóm specs, variants, colors, options, safety, comfort, highlights, pros, cons. Xem mẫu cấu trúc trong README.</small><?php if (isset($errors['details_json'])): ?><small style="color:#c0392b;"><?= e($errors['details_json']) ?></small><?php endif; ?></label>
+            <label>Thông số, phiên bản và trang bị (JSON)<textarea name="details_json" rows="18" spellcheck="false"><?= e($detailsValue ?: '{}') ?></textarea><small>Nhập đầy đủ specs: engine, displacement, power, torque, transmission, fuel, consumption, dimensions, wheelbase, ground_clearance, seats, doors, tank, trunk, origin. Xe cũ thêm mileage, owners, license_plate, inspection. Thêm variants, colors, options, safety, comfort, highlights, pros, cons.</small><?php if (isset($errors['details_json'])): ?><small style="color:#c0392b;"><?= e($errors['details_json']) ?></small><?php endif; ?></label>
             <label style="display:flex;align-items:center;gap:8px;"><input type="checkbox" name="featured" value="1" <?= $checked('featured') ?>> Xe nổi bật</label>
             <label>Ảnh xe <?= $car ? '(để trống nếu giữ ảnh cũ)' : '*' ?>
                 <?php if ($car): ?><div style="margin:6px 0;"><img src="<?= e(image_src($car['image_url'])) ?>" alt="" style="width:120px;height:80px;object-fit:cover;border-radius:6px;"></div><?php endif; ?>

@@ -5,11 +5,22 @@ declare(strict_types=1);
 require_once dirname(__DIR__, 2) . '/Helpers/view.php';
 
 $title = $title ?? 'Showroom ô tô chính hãng';
-$cartItems = is_array($_SESSION['cart'] ?? null) ? $_SESSION['cart'] : [];
-$cartCount = array_sum(array_map(
-    static fn ($item): int => is_array($item) ? max(0, (int) ($item['quantity'] ?? 0)) : 0,
-    $cartItems
-));
+$layoutPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$layoutBase = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
+if ($layoutBase !== '' && $layoutBase !== '/' && str_starts_with($layoutPath, $layoutBase)) {
+    $layoutPath = substr($layoutPath, strlen($layoutBase)) ?: '/';
+}
+$isAdminArea = str_starts_with($layoutPath, '/admin')
+    && (($_SESSION['user']['role'] ?? '') === 'admin');
+$adminNavigation = [
+    ['path' => '/admin', 'prefix' => false, 'label' => 'Tổng quan', 'icon' => '⌂'],
+    ['path' => '/admin/xe', 'prefix' => true, 'label' => 'Quản lý xe', 'icon' => '▣'],
+    ['path' => '/admin/danh-muc', 'prefix' => true, 'label' => 'Hãng & kiểu dáng', 'icon' => '◈'],
+    ['path' => '/admin/don-hang', 'prefix' => true, 'label' => 'Đơn đặt cọc', 'icon' => '▤'],
+    ['path' => '/admin/lien-he', 'prefix' => true, 'label' => 'Liên hệ khách hàng', 'icon' => '✉'],
+    ['path' => '/admin/tai-khoan', 'prefix' => true, 'label' => 'Tài khoản', 'icon' => '♙'],
+    ['path' => '/admin/thanh-toan', 'prefix' => true, 'label' => 'Thanh toán', 'icon' => '₫'],
+];
 ?>
 <!doctype html>
 <html lang="vi">
@@ -58,10 +69,6 @@ $cartCount = array_sum(array_map(
                 <a href="<?= e(url('/#ve-chung-toi')) ?>">Về chúng tôi</a>
             </nav>
 
-            <a class="cart-nav-link" href="<?= e(url('/gio-hang')) ?>" aria-label="Giỏ hàng, <?= e($cartCount) ?> xe">
-                Giỏ hàng <span><?= e($cartCount) ?></span>
-            </a>
-
             <?php if (isset($_SESSION['user'])): ?>
 
             <div class="account-nav">
@@ -94,7 +101,7 @@ $cartCount = array_sum(array_map(
                         </a>
 
                         <a href="<?= e(url('/tai-khoan/don-hang')) ?>">
-                            Đơn mua xe & đặt cọc
+                            Đơn đặt cọc của tôi
                         </a>
 
                         <a href="<?= e(url('/yeu-thich')) ?>">
@@ -144,7 +151,27 @@ $cartCount = array_sum(array_map(
     </header>
 
     <main>
-        <?= $content ?>
+        <?php if ($isAdminArea): ?>
+            <div class="admin-shell">
+                <aside class="admin-sidebar" aria-label="Điều hướng quản trị">
+                    <div class="admin-sidebar-brand"><span class="admin-sidebar-mark">T</span><div><strong>SHOWROOM</strong><small>QUẢN TRỊ HỆ THỐNG</small></div></div>
+                    <nav>
+                        <?php foreach ($adminNavigation as $item): ?>
+                            <?php $active = $item['prefix']
+                                ? str_starts_with($layoutPath, $item['path'])
+                                : $layoutPath === $item['path']; ?>
+                            <a href="<?= e(url($item['path'])) ?>" class="<?= $active ? 'is-active' : '' ?>" <?= $active ? 'aria-current="page"' : '' ?>>
+                                <span aria-hidden="true"><?= e($item['icon']) ?></span><?= e($item['label']) ?>
+                            </a>
+                        <?php endforeach; ?>
+                    </nav>
+                    <a class="admin-sidebar-home" href="<?= e(url('/')) ?>">← Về website</a>
+                </aside>
+                <div class="admin-content"><?= $content ?></div>
+            </div>
+        <?php else: ?>
+            <?= $content ?>
+        <?php endif; ?>
     </main>
 
     <footer class="footer" id="ve-chung-toi" itemscope itemtype="https://schema.org/AutoDealer">
@@ -183,9 +210,9 @@ $cartCount = array_sum(array_map(
                 <h4>Khám phá</h4>
                 <a href="<?= e(url('/xe')) ?>">Tất cả xe</a>
                 <a href="<?= e(url('/xe?body_type=SUV')) ?>">Xe SUV</a>
-                <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Sedan</a>
-                <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Mvp</a>
-                <a href="<?= e(url('/xe?fuel=Hybrid')) ?>">Xe Coupe</a>
+                <a href="<?= e(url('/xe?body_type=Sedan')) ?>">Xe Sedan</a>
+                <a href="<?= e(url('/xe?body_type=MPV')) ?>">Xe MPV</a>
+                <a href="<?= e(url('/xe?body_type=Coupe')) ?>">Xe Coupe</a>
             </nav>
 
             <nav class="footer-links" id="dich-vu" aria-label="Dịch vụ">
