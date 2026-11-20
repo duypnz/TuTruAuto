@@ -214,23 +214,51 @@ document.addEventListener('DOMContentLoaded', () => {
     const installmentCalculator = document.querySelector('[data-installment-calculator]');
     if (installmentCalculator) {
         const result = installmentCalculator.querySelector('[data-installment-result]');
+        const termSelect = installmentCalculator.querySelector('[name="term_months"]');
+        const downPaymentInput = installmentCalculator.querySelector('[name="down_payment_amount"]');
+        const rateResult = installmentCalculator.querySelector('[data-installment-rate]');
+        const rateRanges = {
+            12: [6, 8], 24: [6, 9], 36: [7, 10], 48: [7, 10],
+            60: [8, 11], 72: [8, 11], 84: [8, 12]
+        };
+        const formatMoney = (value) => new Intl.NumberFormat('vi-VN').format(Math.round(value)) + ' ₫';
+        const updateRateLabel = () => {
+            const term = Number(termSelect.value);
+            const [minRate, maxRate] = rateRanges[term] || [0, 0];
+            if (rateResult) rateResult.textContent = 'Biên độ lãi suất: ' + minRate + '–' + maxRate + '%/năm';
+            const price = orderForm ? updateCarPrice(orderForm) : 0;
+            if (downPaymentInput && price) {
+                const down = Number(downPaymentInput.value || 0);
+                const hint = installmentCalculator.querySelector('[data-down-payment-hint]');
+                if (hint) hint.textContent = price > 0 ? 'Tương đương ' + (down / price * 100).toFixed(1).replace('.0', '') + '% giá xe' : '';
+            }
+        };
+        termSelect?.addEventListener('change', updateRateLabel);
+        downPaymentInput?.addEventListener('input', updateRateLabel);
+        updateRateLabel();
         installmentCalculator.querySelector('[data-calculate-installment]')?.addEventListener('click', () => {
-            const downPayment = Number(installmentCalculator.querySelector('[name="down_payment_percent"]').value);
-            const rateInput = installmentCalculator.querySelector('[name="annual_rate"]');
-            const annualRate = Number(rateInput.value);
-            const months = Number(installmentCalculator.querySelector('[name="term_months"]').value);
+            const downPayment = Number(downPaymentInput?.value || 0);
+            const months = Number(termSelect?.value || 0);
             const price = orderForm ? updateCarPrice(orderForm) : Number(document.querySelector('#detail-price')?.dataset.basePrice || 0);
-            if (!Number.isFinite(downPayment) || downPayment < 10 || downPayment > 80 || !rateInput.value.trim() || !Number.isFinite(annualRate) || annualRate < 0 || annualRate > 40 || !price || !months) {
-                result.textContent = 'Nhập tỷ lệ trả trước từ 10%-80% và lãi suất năm từ 0%-40% theo tư vấn ngân hàng.';
+            const [minRate, maxRate] = rateRanges[months] || [0, 0];
+            if (!Number.isFinite(downPayment) || downPayment < 0 || downPayment >= price || !price || !months) {
+                result.textContent = 'Số tiền cọc phải nhỏ hơn giá xe. Vui lòng nhập lại.';
                 result.classList.add('is-error');
                 return;
             }
-            const principal = price * (1 - downPayment / 100);
+            const annualRate = (minRate + maxRate) / 2;
+            const principal = price - downPayment;
             const monthlyRate = annualRate / 1200;
             const monthlyPayment = monthlyRate === 0
                 ? principal / months
                 : principal * monthlyRate / (1 - Math.pow(1 + monthlyRate, -months));
-            result.textContent = 'Dự kiến khoảng ' + new Intl.NumberFormat('vi-VN').format(Math.round(monthlyPayment)) + ' ₫/tháng trong ' + months + ' tháng. Chưa gồm phí, bảo hiểm và điều kiện duyệt vay.';
+            const totalPayment = monthlyPayment * months;
+            const totalInterest = totalPayment - principal;
+            result.innerHTML =
+                '<strong>Còn cần thanh toán: ' + formatMoney(principal) + '</strong><br>' +
+                'Tổng lãi dự kiến (' + annualRate + '%/năm): ' + formatMoney(totalInterest) + '<br>' +
+                'Tổng số tiền sau lãi: ' + formatMoney(totalPayment) + '<br>' +
+                'Trả khoảng <strong>' + formatMoney(monthlyPayment) + '/tháng</strong> trong ' + months + ' tháng.';
             result.classList.remove('is-error');
         });
     }
@@ -276,6 +304,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const compareForm = document.querySelector('[data-compare-select-form]');
     if (compareForm) {
+        const compareSearch = compareForm.querySelector('[data-compare-search]');
+        if (compareSearch) {
+            compareSearch.addEventListener('input', () => {
+                const keyword = compareSearch.value.trim().toLocaleLowerCase('vi');
+                compareForm.querySelectorAll('[data-compare-select] option').forEach((option) => {
+                    if (!option.value) return;
+                    option.hidden = keyword !== '' && !option.textContent.toLocaleLowerCase('vi').includes(keyword);
+                });
+            });
+        }
         compareForm.addEventListener('submit', (event) => {
             const ids = Array.from(compareForm.querySelectorAll('[data-compare-select]'))
                 .map((select) => select.value)

@@ -20,12 +20,13 @@ final class Car
     {
         $stmt = $this->db->prepare(
             'SELECT * FROM cars
-             WHERE status = :status
+             WHERE status = :status AND condition_type = :condition_type
              ORDER BY featured DESC, created_at DESC
              LIMIT :limit'
         );
 
         $stmt->bindValue(':status', 'available');
+        $stmt->bindValue(':condition_type', 'new');
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
@@ -35,14 +36,14 @@ final class Car
     public function countAll(): int
     {
         return (int) $this->db
-            ->query('SELECT COUNT(*) FROM cars')
+            ->query("SELECT COUNT(*) FROM cars WHERE condition_type = 'new'")
             ->fetchColumn();
     }
 
     public function search(array $filters): array
     {
-        $sql = 'SELECT * FROM cars WHERE status = :status';
-        $params = ['status' => 'available'];
+        $sql = 'SELECT * FROM cars WHERE status = :status AND condition_type = :condition_type';
+        $params = ['status' => 'available', 'condition_type' => 'new'];
 
         foreach (
             [
@@ -88,7 +89,7 @@ final class Car
             return [];
         }
         $placeholders = [];
-        $params = ['status' => 'available'];
+        $params = ['status' => 'available', 'condition_type' => 'new'];
         foreach ($ids as $index => $id) {
             $placeholder = 'car_id_' . $index;
             $placeholders[] = ':' . $placeholder;
@@ -96,7 +97,7 @@ final class Car
         }
         $stmt = $this->db->prepare(
             'SELECT * FROM cars
-             WHERE status = :status AND id IN (' . implode(', ', $placeholders) . ')
+             WHERE status = :status AND condition_type = :condition_type AND id IN (' . implode(', ', $placeholders) . ')
              ORDER BY id'
         );
         $stmt->execute($params);
@@ -108,13 +109,14 @@ final class Car
     {
         $stmt = $this->db->prepare(
             'SELECT * FROM cars
-             WHERE slug = :slug AND status <> :status
+             WHERE slug = :slug AND status <> :status AND condition_type = :condition_type
              LIMIT 1'
         );
 
         $stmt->execute([
             'slug' => $slug,
-            'status' => 'hidden'
+            'status' => 'hidden',
+            'condition_type' => 'new'
         ]);
 
         return $stmt->fetch() ?: null;
@@ -124,12 +126,13 @@ final class Car
     {
         $stmt = $this->db->prepare(
             'SELECT * FROM cars
-             WHERE status = :status AND id <> :id
+             WHERE status = :status AND condition_type = :condition_type AND id <> :id
                AND (brand = :brand OR body_type = :body_type)
              ORDER BY (brand = :brand_order) DESC, featured DESC, created_at DESC
              LIMIT :limit'
         );
         $stmt->bindValue(':status', 'available');
+        $stmt->bindValue(':condition_type', 'new');
         $stmt->bindValue(':id', (int) $car['id'], PDO::PARAM_INT);
         $stmt->bindValue(':brand', (string) $car['brand']);
         $stmt->bindValue(':body_type', (string) $car['body_type']);
@@ -220,13 +223,15 @@ final class Car
 
         $sql = 'SELECT * FROM cars
                 WHERE status = :status
+                AND condition_type = :condition_type
                 AND slug IN (' . implode(', ', $placeholders) . ')
                 ORDER BY created_at DESC';
 
         $stmt = $this->db->prepare($sql);
 
         $params = [
-            'status' => 'available'
+            'status' => 'available',
+            'condition_type' => 'new'
         ];
 
         foreach ($slugs as $index => $slug) {

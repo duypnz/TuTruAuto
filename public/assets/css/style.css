@@ -2096,3 +2096,61 @@ a {
     .admin-order-details>div, .customer-deposit-details>div { grid-template-columns: 1fr auto; align-items: center; }
     .admin-order-details strong, .customer-deposit-details strong { text-align: right; }
 }
+
+.advice-page { min-height: 620px; }
+.advice-form {
+    max-width: 760px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    padding: 28px;
+    background: #fff;
+    border: 1px solid var(--line);
+}
+.advice-form label { display: grid; gap: 8px; font-weight: 700; }
+.advice-form label:nth-last-child(2),
+.advice-form .button { grid-column: 1 / -1; }
+.advice-form input, .advice-form textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    padding: 12px;
+    font: inherit;
+}
+.deposit-payment-method {
+    display: grid;
+    gap: 8px;
+    border: 1px solid var(--line);
+    padding: 12px;
+}
+.deposit-payment-method legend { padding: 0 6px; font-weight: 700; }
+.deposit-payment-method label { display: flex; align-items: center; gap: 8px; }
+.fake-payment-qr {
+    width: 180px;
+    min-height: 180px;
+    display: grid;
+    place-items: center;
+    margin: 10px 0 16px;
+    border: 10px solid #17201d;
+    background:
+        linear-gradient(45deg, #17201d 25%, transparent 25%, transparent 75%, #17201d 75%),
+        linear-gradient(45deg, #17201d 25%, #fff 25%, #fff 75%, #17201d 75%);
+    background-size: 18px 18px;
+    background-position: 0 0, 9px 9px;
+    color: #17201d;
+}
+.fake-payment-qr .fake-qr-mark,
+.fake-payment-qr strong,
+.fake-payment-qr small {
+    background: #fff;
+    padding: 4px 6px;
+    text-align: center;
+}
+.installment-rate { color: var(--green); font-weight: 700; }
+.installment-result strong { display: inline-block; }
+
+@media (max-width: 640px) {
+    .advice-form { grid-template-columns: 1fr; padding: 18px; }
+    .advice-form label:nth-last-child(2),
+    .advice-form .button { grid-column: auto; }
+}

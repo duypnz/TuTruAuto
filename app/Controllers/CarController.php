@@ -154,6 +154,12 @@ final class CarController extends Controller
             ? (int) $_SESSION['user']['id']
             : null;
         if ($action === 'deposit') {
+            $paymentMethod = (string) ($_POST['payment_method'] ?? '');
+            if (!in_array($paymentMethod, ['bank', 'cash'], true)) {
+                $paymentMethod = 'bank';
+            }
+            $paymentDetails = (new SiteSetting())->paymentDetails();
+            $paymentDetails['method'] = $paymentMethod;
             $orderId = (new CustomerOrder())->create([
                 'user_id' => $userId,
                 'order_type' => 'deposit',
@@ -167,7 +173,7 @@ final class CarController extends Controller
                 'total' => ($unitPrice * $quantity) - $discount,
                 'deposit_amount' => max(1, (int) round((($unitPrice * $quantity) - $discount) * 0.1)),
                 'delivery_at' => null,
-                'payment_info' => (new SiteSetting())->paymentDetails(),
+                'payment_info' => $paymentDetails,
             ], [[
                 'car_id' => (int) $car['id'],
                 'name' => (string) $car['name'],
@@ -217,12 +223,53 @@ final class CarController extends Controller
             $_SESSION['_flash'] = 'Vui lòng kiểm tra họ tên, số điện thoại, email và nội dung liên hệ.';
             $this->redirect('/#lien-he');
         }
+
         $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
             ? (int) $_SESSION['user']['id']
             : null;
         (new CustomerInquiry())->create(null, $userId, 'contact', $name, $phone, $email, $message);
         $_SESSION['_success'] = 'Đã nhận thông tin liên hệ. Nhân viên sẽ gọi lại sớm.';
         $this->redirect('/#lien-he');
+    }
+
+    public function adviceForm(): void
+    {
+        $this->render('advice/index', [
+            'title' => 'Đặt lịch tư vấn',
+            'success' => $this->takeFlash('_success'),
+            'error' => $this->takeFlash(),
+            'csrf' => Csrf::token(),
+        ]);
+    }
+
+    public function submitAdvice(): void
+    {
+        if (!Csrf::valid($_POST['_csrf'] ?? null)) {
+            http_response_code(419);
+            echo 'Phiên làm việc đã hết hạn. Vui lòng tải lại trang.';
+            return;
+        }
+        $name = trim((string) ($_POST['customer_name'] ?? ''));
+        $phone = trim((string) ($_POST['phone'] ?? ''));
+        $email = strtolower(trim((string) ($_POST['email'] ?? '')));
+        $carInterest = trim((string) ($_POST['car_interest'] ?? ''));
+        $message = trim((string) ($_POST['message'] ?? ''));
+        if (
+            mb_strlen($name) < 2 || mb_strlen($name) > 120
+            || !preg_match('/^[0-9+().\s-]{7,30}$/', $phone)
+            || ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL))
+            || mb_strlen($message) > 2000
+        ) {
+            $_SESSION['_flash'] = 'Vui lòng nhập họ tên, số điện thoại, email và nội dung hợp lệ.';
+            $this->redirect('/tu-van');
+        }
+        $description = ($carInterest !== '' ? 'Xe quan tâm: ' . $carInterest . '. ' : '') . $message;
+        $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
+            ? (int) $_SESSION['user']['id']
+            : null;
+        (new CustomerInquiry())->create(null, $userId, 'advice', $name, $phone, $email, $description);
+        $_SESSION['_success'] = 'Đã gửi yêu cầu tư vấn. Chuyên viên Tu Tru Auto sẽ liên hệ trong giờ làm việc.';
+        $this->redirect('/tu-van');
     }
 
     public function submitReview(array $params): void

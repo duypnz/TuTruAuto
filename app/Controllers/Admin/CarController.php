@@ -242,7 +242,7 @@ final class CarController extends Controller
         $data['discount_price'] = $discountPrice === '' || $discountPrice === false ? null : $discountPrice;
 
         $condition = (string) ($post['condition_type'] ?? 'new');
-        if (!in_array($condition, ['new', 'used'], true)) {
+        if (!in_array($condition, ['new'], true)) {
             $errors['condition_type'] = 'Tình trạng xe không hợp lệ.';
             $condition = 'new';
         }

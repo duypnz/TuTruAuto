@@ -41,10 +41,16 @@ ob_start();
         </div>
         <section class="payment-instructions">
             <h2>Phương thức thanh toán tiền cọc</h2>
+            <?php if (($payment['method'] ?? 'bank') === 'bank'): ?>
             <div class="payment-method">
                 <span class="payment-method-icon">↗</span>
                 <div><h3>Chuyển khoản ngân hàng</h3>
                     <?php if ($hasBankDetails): ?>
+                        <div class="fake-payment-qr" aria-label="Mã QR chuyển tiền giả lập">
+                            <span class="fake-qr-mark">TTA</span>
+                            <strong><?= money($order['deposit_amount'] ?? round((int) $order['total'] * 0.1)) ?></strong>
+                            <small>Mã QR minh họa — chưa kích hoạt thanh toán</small>
+                        </div>
                         <dl>
                             <div><dt>Ngân hàng</dt><dd><?= e($payment['bank_name']) ?><?= !empty($payment['bank_code']) ? ' (' . e($payment['bank_code']) . ')' : '' ?></dd></div>
                             <div><dt>Số tài khoản</dt><dd><?= e($payment['bank_account']) ?></dd></div>
@@ -59,11 +65,13 @@ ob_start();
                     <?php endif; ?>
                 </div>
             </div>
+            <?php else: ?>
             <div class="payment-method">
                 <span class="payment-method-icon">₫</span>
-                <div><h3>Nộp tiền mặt tại showroom</h3><p>Nhân viên sẽ lập phiếu thu và xác nhận khoản đặt cọc cho đơn hàng này.</p></div>
+                <div><h3>Nộp tiền mặt tại showroom</h3><p>Vui lòng đến showroom để nộp tiền mặt và nhận phiếu thu. Chỉ nhân viên showroom mới xác nhận khoản đặt cọc.</p><strong>Showroom: Trịnh Văn Bô, Nam Từ Liêm, Hà Nội</strong></div>
             </div>
-            <p class="payment-disclaimer">Đây là yêu cầu đặt cọc, không phải xác nhận thanh toán tự động. Không chuyển tiền vào tài khoản khác với thông tin được lưu trên đơn.</p>
+            <?php endif; ?>
+            <p class="payment-disclaimer">Đây là yêu cầu đặt cọc, không phải xác nhận thanh toán tự động. Mã QR trên trang này là minh họa giả lập.</p>
         </section>
     </article>
 </div></section>

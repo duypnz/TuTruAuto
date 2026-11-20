@@ -30,7 +30,7 @@ $specRows = [
     'trunk' => 'Dung tích cốp',
     'origin' => 'Xuất xứ',
 ];
-$conditionLabels = ['new' => 'Xe mới', 'used' => 'Xe đã qua sử dụng'];
+$conditionLabels = ['new' => 'Xe mới'];
 $detailsByCar = [];
 foreach ($selectedCars as $car) {
     $decoded = json_decode((string) ($car['details_json'] ?? ''), true);
@@ -41,6 +41,9 @@ ob_start();
 <section class="section compare-page"><div class="container">
     <div class="section-heading compare-heading"><div><span class="eyebrow"><span></span> SO SÁNH CẤU HÌNH XE</span><h2>Chọn xe phù hợp với bạn</h2><p>Chọn từ 2 đến 3 xe đang bán để đối chiếu thông số và giá.</p></div><a class="outline-link" href="<?= e(url('/xe')) ?>">← Quay lại bộ sưu tập</a></div>
     <form method="get" action="<?= e(url('/so-sanh')) ?>" class="compare-select-form" data-compare-select-form>
+        <label class="compare-search">Tìm xe
+            <input type="search" data-compare-search placeholder="Nhập tên hoặc thương hiệu xe">
+        </label>
         <?php for ($slot = 0; $slot < 3; $slot++): ?>
             <label>Xe <?= $slot + 1 ?><?= $slot < 2 ? ' *' : ' (tùy chọn)' ?>
                 <select name="ids[]" <?= $slot < 2 ? 'required' : '' ?> data-compare-select>

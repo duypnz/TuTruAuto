@@ -74,7 +74,6 @@ if ($detailsValue === '' && is_array($car) && !empty($car['details_json'])) {
             <label>Giá khuyến mãi (VND)<input type="number" name="discount_price" min="1" value="<?= e($val('discount_price')) ?>" placeholder="Để trống nếu không khuyến mãi"><?php if (isset($errors['discount_price'])): ?><small style="color:#c0392b;"><?= e($errors['discount_price']) ?></small><?php endif; ?></label>
             <label>Tình trạng xe<select name="condition_type">
                 <option value="new" <?= $val('condition_type', 'new') === 'new' ? 'selected' : '' ?>>Xe mới</option>
-                <option value="used" <?= $val('condition_type') === 'used' ? 'selected' : '' ?>>Xe đã qua sử dụng</option>
             </select><?php if (isset($errors['condition_type'])): ?><small style="color:#c0392b;"><?= e($errors['condition_type']) ?></small><?php endif; ?></label>
             <label>Mã xe<input type="text" name="car_code" maxlength="40" value="<?= e($val('car_code')) ?>" placeholder="Tự tạo nếu để trống"><?php if (isset($errors['car_code'])): ?><small style="color:#c0392b;"><?= e($errors['car_code']) ?></small><?php endif; ?></label>
             <label>Trạng thái *<select name="status">

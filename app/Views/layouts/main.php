@@ -32,7 +32,7 @@ $adminNavigation = [
     <title><?= e($title) ?> | Tu Tru Auto</title>
 
     <meta name="description"
-        content="Khám phá xe mới, xe đã qua sử dụng chất lượng tại Tu Tru Auto. Tư vấn tận tâm, giá minh bạch, lái thử miễn phí.">
+        content="Khám phá các dòng xe mới chính hãng tại Tu Tru Auto. Tư vấn tận tâm, giá minh bạch, lái thử miễn phí.">
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -219,7 +219,7 @@ $adminNavigation = [
                 <h4>Dịch vụ</h4>
                 <a href="tel:19006868">Tư vấn mua xe</a>
                 <a href="tel:19006868">Đăng ký lái thử</a>
-                <a href="tel:19006868">Thu mua xe cũ</a>
+                <a href="<?= e(url('/tu-van')) ?>">Hỗ trợ tài chính</a>
             </nav>
 
             <div class="footer-contact">

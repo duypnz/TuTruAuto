@@ -31,6 +31,7 @@ $specRows = [
     'transmission' => 'Hộp số',
     'fuel' => 'Nhiên liệu',
     'consumption' => 'Mức tiêu hao',
+    'drive_type' => 'Dẫn động',
     'dimensions' => 'Dài × rộng × cao',
     'wheelbase' => 'Chiều dài cơ sở',
     'ground_clearance' => 'Khoảng sáng gầm',
@@ -88,18 +89,21 @@ ob_start();
                 <section class="installment-calculator" id="tra-gop" data-installment-calculator>
                     <div><span class="eyebrow"><span></span> ƯỚC TÍNH THAM KHẢO</span><h2>Tính khoản trả góp</h2><p>Chưa gồm phí, bảo hiểm và điều kiện duyệt vay của ngân hàng.</p></div>
                     <div class="installment-fields">
-                        <label>Trả trước (%)
-                            <input name="down_payment_percent" type="number" min="10" max="80" step="1" value="10" required>
-                        </label>
-                        <label>Lãi suất năm (%)
-                            <input name="annual_rate" type="number" min="0" max="40" step="0.1" placeholder="Nhập theo tư vấn ngân hàng" required>
+                        <label>Số tiền đặt cọc
+                            <input name="down_payment_amount" type="number" min="0" step="1000000" value="<?= e((string) round($price * 0.1)) ?>" required>
+                            <small data-down-payment-hint>10% giá xe</small>
                         </label>
                         <label>Thời hạn vay
-                            <select name="term_months"><?php foreach ([12, 24, 36, 48, 60, 72, 84] as $term): ?><option value="<?= $term ?>" <?= $term === 60 ? 'selected' : '' ?>><?= $term ?> tháng</option><?php endforeach; ?></select>
+                            <select name="term_months">
+                                <?php foreach ([12 => '6–8%', 24 => '6–9%', 36 => '7–10%', 48 => '7–10%', 60 => '8–11%', 72 => '8–11%', 84 => '8–12%'] as $term => $rate): ?>
+                                    <option value="<?= $term ?>" data-rate-label="<?= e($rate) ?>" <?= $term === 60 ? 'selected' : '' ?>><?= $term ?> tháng — <?= e($rate) ?>/năm</option>
+                                <?php endforeach; ?>
+                            </select>
                         </label>
                     </div>
+                    <p class="installment-rate" data-installment-rate>Biên độ lãi suất: 8–11%/năm</p>
                     <button class="button button-outline" type="button" data-calculate-installment>Tính khoản trả hàng tháng</button>
-                    <p class="installment-result" data-installment-result aria-live="polite">Nhập lãi suất được ngân hàng tư vấn để xem khoản trả dự kiến.</p>
+                    <p class="installment-result" data-installment-result aria-live="polite">Chọn số tiền cọc và thời hạn vay để xem khoản thanh toán dự kiến.</p>
                 </section>
                 <div class="detail-thumbnails" aria-label="Thư viện ảnh xe">
                     <?php foreach ($car['gallery'] as $index => $image): ?>
@@ -218,6 +222,13 @@ ob_start();
                             <a class="button button-dark" href="<?= e(url('/dang-nhap')) ?>">Đăng nhập để đặt cọc</a>
                         <?php endif; ?>
                     </div>
+                    <?php if (isCustomerLoggedIn()): ?>
+                    <fieldset class="deposit-payment-method">
+                        <legend>Phương thức thanh toán tiền cọc</legend>
+                        <label><input type="radio" name="payment_method" value="bank" checked> Chuyển khoản qua mã QR</label>
+                        <label><input type="radio" name="payment_method" value="cash"> Tiền mặt tại showroom</label>
+                    </fieldset>
+                    <?php endif; ?>
                     <?php if (isCustomerLoggedIn()): ?><p class="deposit-amount-preview" data-deposit-preview>Tiền cọc dự kiến (10%): <strong><?= money((int) round($price * 0.1)) ?></strong></p><?php endif; ?>
                     <div class="contact-fields">
                         <label>Họ tên<input name="customer_name" maxlength="120" value="<?= e($_SESSION['user']['name'] ?? '') ?>" placeholder="Tên của bạn"></label>
@@ -283,15 +294,29 @@ ob_start();
                 <button type="button" role="tab" id="tab-pros" aria-controls="panel-pros" aria-selected="false">Ưu & nhược điểm</button>
             </div>
             <div id="panel-description" class="tab-panel" role="tabpanel" aria-labelledby="tab-description">
-                <p><?= nl2br(e($car['description'] ?: 'Thông tin mô tả đang được cập nhật.')) ?></p>
+                <p><?= nl2br(e($car['description'] ?: 'Xe mới được Tu Tru Auto tuyển chọn theo tiêu chí minh bạch về nguồn gốc, cấu hình, lịch sử bảo dưỡng và điều kiện cung cấp. Mỗi phiên bản đều có thông tin giá niêm yết, trang bị, màu sắc và gói tùy chọn rõ ràng để khách hàng dễ dàng đối chiếu trước khi mua. Chuyên viên showroom có thể hỗ trợ lái thử, tư vấn tài chính, xác nhận cấu hình thực tế và các chính sách bảo hành áp dụng cho xe giao đến.')) ?></p>
             </div>
             <div id="panel-highlights" class="tab-panel" role="tabpanel" aria-labelledby="tab-highlights" hidden>
-                <ul><?php foreach ((array) ($details['highlights'] ?? ['Thiết kế hiện đại', 'Tư vấn cấu hình và chi phí minh bạch', 'Hỗ trợ lái thử tại showroom']) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul>
+                <ul><?php foreach ((array) ($details['highlights'] ?? [
+                    'Thiết kế ngoại thất hiện đại, phù hợp nhiều hoàn cảnh sử dụng',
+                    'Cabin bố trí khoa học, dễ dàng điều chỉnh ghế và hệ thống giải trí',
+                    'Trang bị an toàn chủ động và hỗ trợ lái theo cấu hình của từng phiên bản',
+                    'Không gian hành lý linh hoạt, phù hợp nhu cầu gia đình và công tác',
+                    'Được tư vấn rõ giá, thời gian giao xe, bảo hành và lịch bảo dưỡng'
+                ]) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul>
             </div>
             <div id="panel-pros" class="tab-panel" role="tabpanel" aria-labelledby="tab-pros" hidden>
                 <div class="pros-cons">
-                    <div><h3>Ưu điểm</h3><ul><?php foreach ((array) ($details['pros'] ?? ['Thiết kế và trang bị phù hợp nhu cầu sử dụng']) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul></div>
-                    <div><h3>Điểm cần cân nhắc</h3><ul><?php foreach ((array) ($details['cons'] ?? ['Vui lòng trải nghiệm và so sánh phiên bản trước khi chọn mua']) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul></div>
+                    <div><h3>Ưu điểm</h3><ul><?php foreach ((array) ($details['pros'] ?? [
+                        'Cấu hình rõ ràng, có thể lựa chọn thêm các gói trang bị phù hợp nhu cầu',
+                        'Được hỗ trợ lái thử để đánh giá cảm giác vận hành thực tế',
+                        'Có tư vấn tài chính, bảo hành chính hãng và quy trình bàn giao minh bạch'
+                    ]) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul></div>
+                    <div><h3>Điểm cần cân nhắc</h3><ul><?php foreach ((array) ($details['cons'] ?? [
+                        'Giá lăn bánh, phí biển số và chi phí bảo hiểm có thể thay đổi theo khu vực',
+                        'Trang bị và màu xe thực tế cần đối chiếu lại theo phiên bản đang phân phối',
+                        'Mức tiêu thụ và cảm giác vận hành có thể khác nhau tùy tải trọng, địa hình và thói quen lái'
+                    ]) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul></div>
                 </div>
             </div>
         </section>

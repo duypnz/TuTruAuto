@@ -26,6 +26,8 @@ $router->get('/xe/{slug}', [CarController::class, 'show']);
 $router->get('/so-sanh', [CarController::class, 'compare']);
 $router->post('/xe/{slug}/yeu-cau', [CarController::class, 'submitCarRequest']);
 $router->post('/lien-he', [CarController::class, 'submitContact']);
+$router->get('/tu-van', [CarController::class, 'adviceForm']);
+$router->post('/tu-van', [CarController::class, 'submitAdvice']);
 $router->post('/xe/{slug}/danh-gia', [CarController::class, 'submitReview']);
 $router->post('/voucher/kiem-tra', [CarController::class, 'checkVoucher']);
 $router->get('/tai-khoan/don-hang', [OrderController::class, 'customerOrders']);

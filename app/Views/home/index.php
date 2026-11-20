@@ -91,23 +91,8 @@ ob_start(); ?>
         <div>
             <div class="eyebrow light"><span></span> SẴN SÀNG KHỞI HÀNH?</div>
             <h2>Chiếc xe tiếp theo<br>đang chờ bạn.</h2>
-        </div><a class="button button-accent" href="tel:19006868">Đặt lịch tư vấn <span>↗</span></a>
+        </div><a class="button button-accent" href="<?= e(url('/tu-van')) ?>">Đặt lịch tư vấn <span>↗</span></a>
         <div class="cta-orbit"></div>
-    </div>
-</section>
-<section class="home-contact section" id="lien-he">
-    <div class="container home-contact-grid">
-        <div><div class="eyebrow"><span></span> TU TRU AUTO LUÔN SẴN SÀNG</div><h2>Để lại thông tin,<br><em>chúng tôi sẽ gọi lại.</em></h2>
-            <p>Đội ngũ tư vấn sẽ hỗ trợ thông tin xe, lịch lái thử và phương án tài chính.</p>
-        </div>
-        <form method="post" action="<?= e(url('/lien-he')) ?>" class="home-contact-form">
-            <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
-            <label>Họ tên<input name="customer_name" maxlength="120" required value="<?= e($_SESSION['user']['name'] ?? '') ?>"></label>
-            <label>Số điện thoại<input name="phone" type="tel" maxlength="30" required placeholder="Số điện thoại liên hệ"></label>
-            <label>Email<input name="email" type="email" maxlength="190" required value="<?= e($_SESSION['user']['email'] ?? '') ?>"></label>
-            <label>Nội dung<textarea name="message" rows="3" maxlength="2000" placeholder="Bạn cần được tư vấn về điều gì?"></textarea></label>
-            <button class="button button-dark" type="submit">Gửi yêu cầu tư vấn <span>↗</span></button>
-        </form>
     </div>
 </section>
 <?php $content = ob_get_clean(); require dirname(__DIR__) . '/layouts/main.php';
