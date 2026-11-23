@@ -24,6 +24,8 @@ CREATE TABLE IF NOT EXISTS cars (
     transmission VARCHAR(50) NOT NULL,
     price DECIMAL(15,0) NOT NULL,
     discount_price DECIMAL(15,0) NULL,
+    stock_quantity INT UNSIGNED NULL DEFAULT NULL,
+    lead_time_days SMALLINT UNSIGNED NOT NULL DEFAULT 21,
     image_url VARCHAR(500) NOT NULL,
     gallery_json LONGTEXT NULL,
     video_url VARCHAR(1000) NULL,

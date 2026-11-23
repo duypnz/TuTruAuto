@@ -9,11 +9,11 @@ Website giới thiệu và bán xe ô tô bằng PHP 8.1+, PDO, MySQL/MariaDB v�
 3. Sao chép `.env.example` thành `.env` và cập nhật thông tin MySQL nếu khác cấu hình mặc định.
 4. Mở `http://localhost/Tu-Tru-Auto/`.
 
-Trang chủ, danh sách xe, lọc/tìm kiếm, banner và trang chi tiết dùng dữ liệu trong bảng `cars`. Ảnh mẫu được tải từ Unsplash nên cần kết nối internet để hiển thị. Sau khi cài mới, chạy tiếp `database/migrations/005_admin_contacts_payment_catalog.sql` để nạp thêm xe mẫu, thư viện ảnh, thông số và danh mục.
+Trang chủ, danh sách xe, lọc/tìm kiếm, banner và trang chi tiết dùng dữ liệu trong bảng `cars`. Ảnh mẫu hiện dùng URL ngoài nên cần kết nối internet để hiển thị. Sau khi cài mới, chạy tiếp các migration `005_admin_contacts_payment_catalog.sql`, `006_new_cars_and_gallery.sql`, `007_car_inventory.sql` và `008_expand_new_car_details.sql` để nạp xe mẫu, thông số, danh mục, tồn kho và nội dung chi tiết.
 
 ### Cập nhật cơ sở dữ liệu hiện có
 
-Nếu website đã được cài đặt trước đó, chọn cơ sở dữ liệu `tu_tru_auto` trong phpMyAdmin và chạy lần lượt các migration `002_car_details_and_sales.sql`, `003_customer_orders.sql`, `004_order_delivery_details.sql` và `005_admin_contacts_payment_catalog.sql`. Migration 005 bổ sung quản lý danh mục, lưu thông tin thanh toán, hộp thư liên hệ và một số xe mẫu. Với cài đặt mới, `database/schema.sql` đã có cấu trúc mới; nhập `database/seed.sql` rồi chạy migration 005.
+Nếu website đã được cài đặt trước đó, chọn cơ sở dữ liệu `tu_tru_auto` trong phpMyAdmin và chạy lần lượt các migration `002_car_details_and_sales.sql`, `003_customer_orders.sql`, `004_order_delivery_details.sql`, `005_admin_contacts_payment_catalog.sql`, `006_new_cars_and_gallery.sql`, `007_car_inventory.sql` và `008_expand_new_car_details.sql`. Migration 007 thêm số xe hiện có tại cửa hàng (để trống nếu chưa kiểm kê) và thời gian dự kiến nhận xe khi hết hàng. Migration 008 mở rộng nội dung chi tiết và ghi rõ các trang bị cần xác nhận theo phiên bản thực tế.
 
 Khách hàng cần đăng nhập mới được đặt cọc; tài khoản quản trị không thể đặt cọc. Tiền cọc được tính tự động bằng 10% giá sau ưu đãi. Khách xem trạng thái, chi tiết, hướng dẫn chuyển khoản và lịch nhận xe tại **Tài khoản → Đơn đặt cọc của tôi**. Quản trị viên tìm kiếm đơn tại `/admin/don-hang`, xác nhận trạng thái và hẹn ngày giờ nhận xe. Cấu hình số tài khoản nhận tiền tại **Quản trị → Thanh toán**; giao dịch được nhân viên xác nhận thủ công, website chưa tích hợp cổng thanh toán.
 
@@ -21,7 +21,7 @@ Quản trị viên có thanh điều hướng bên trái để quản lý xe, th
 
 ### Dữ liệu chi tiết xe trong trang quản trị
 
-Trong **Quản trị → Xe → Sửa xe**, có thể nhập danh sách ảnh (mỗi URL HTTPS hoặc đường dẫn `uploads/cars/...` trên một dòng), URL video HTTPS và JSON cho thông số, biến thể, màu sắc, tùy chọn, trang bị và điểm nổi bật. Ví dụ:
+Trong **Quản trị → Xe → Sửa xe**, có thể nhập danh sách ảnh (mỗi URL HTTPS hoặc đường dẫn `uploads/cars/...` trên một dòng), URL video HTTPS, số lượng tại cửa hàng, thời gian chờ dự kiến và JSON cho thông số, biến thể, màu sắc, tùy chọn, trang bị và điểm nổi bật. Dùng ảnh đã xác minh đúng hãng và đúng mẫu xe; thư viện ảnh mẫu hiện tại chưa đủ 10 ảnh xác thực cho từng xe. Ví dụ:
 
 ```json
 {

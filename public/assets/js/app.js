@@ -180,6 +180,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const voucherButton = document.querySelector('#check-voucher');
     if (voucherButton && orderForm) {
+        const depositPreview = orderForm.querySelector('[data-deposit-preview] strong');
         voucherButton.addEventListener('click', async () => {
             const result = document.querySelector('#voucher-result');
             const code = document.querySelector('#voucher-code');
@@ -304,16 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const compareForm = document.querySelector('[data-compare-select-form]');
     if (compareForm) {
-        const compareSearch = compareForm.querySelector('[data-compare-search]');
-        if (compareSearch) {
-            compareSearch.addEventListener('input', () => {
-                const keyword = compareSearch.value.trim().toLocaleLowerCase('vi');
-                compareForm.querySelectorAll('[data-compare-select] option').forEach((option) => {
-                    if (!option.value) return;
-                    option.hidden = keyword !== '' && !option.textContent.toLocaleLowerCase('vi').includes(keyword);
-                });
-            });
-        }
         compareForm.addEventListener('submit', (event) => {
             const ids = Array.from(compareForm.querySelectorAll('[data-compare-select]'))
                 .map((select) => select.value)

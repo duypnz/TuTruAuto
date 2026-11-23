@@ -12,6 +12,7 @@ $comparisonRows = [
     'year' => 'Năm sản xuất',
     'condition_type' => 'Tình trạng',
     'price' => 'Giá niêm yết',
+    'stock_quantity' => 'Xe hiện có tại cửa hàng',
     'fuel' => 'Nhiên liệu',
     'transmission' => 'Hộp số',
 ];
@@ -41,9 +42,6 @@ ob_start();
 <section class="section compare-page"><div class="container">
     <div class="section-heading compare-heading"><div><span class="eyebrow"><span></span> SO SÁNH CẤU HÌNH XE</span><h2>Chọn xe phù hợp với bạn</h2><p>Chọn từ 2 đến 3 xe đang bán để đối chiếu thông số và giá.</p></div><a class="outline-link" href="<?= e(url('/xe')) ?>">← Quay lại bộ sưu tập</a></div>
     <form method="get" action="<?= e(url('/so-sanh')) ?>" class="compare-select-form" data-compare-select-form>
-        <label class="compare-search">Tìm xe
-            <input type="search" data-compare-search placeholder="Nhập tên hoặc thương hiệu xe">
-        </label>
         <?php for ($slot = 0; $slot < 3; $slot++): ?>
             <label>Xe <?= $slot + 1 ?><?= $slot < 2 ? ' *' : ' (tùy chọn)' ?>
                 <select name="ids[]" <?= $slot < 2 ? 'required' : '' ?> data-compare-select>
@@ -70,6 +68,11 @@ ob_start();
                             <?php $value = match ($field) {
                                 'condition_type' => $conditionLabels[$car[$field] ?? 'new'] ?? 'Chưa cập nhật',
                                 'price' => money($car['discount_price'] ?: $car['price']),
+                                'stock_quantity' => $car[$field] === null
+                                    ? 'Liên hệ để xác nhận'
+                                    : ((int) $car[$field] > 0
+                                        ? (int) $car[$field] . ' xe'
+                                        : 'Hết hàng · có thể đặt trước'),
                                 default => $car[$field] ?? 'Chưa cập nhật',
                             }; ?>
                             <td><?= e($value) ?></td>
@@ -78,7 +81,8 @@ ob_start();
                     <?php foreach ($specRows as $field => $label): ?>
                         <tr><th><?= e($label) ?></th><?php foreach ($selectedCars as $car): ?>
                             <?php $specs = $detailsByCar[(int) $car['id']]['specs'] ?? []; ?>
-                            <td><?= e(is_array($specs) ? ($specs[$field] ?? 'Chưa cập nhật') : 'Chưa cập nhật') ?></td>
+                            <?php $value = is_array($specs) ? ($specs[$field] ?? 'Chưa cập nhật') : 'Chưa cập nhật'; ?>
+                            <td><?= e(is_scalar($value) ? $value : 'Chưa cập nhật') ?></td>
                         <?php endforeach; ?></tr>
                     <?php endforeach; ?>
                     <tr class="comparison-deposit"><th>Tiền cọc (10%)</th><?php foreach ($selectedCars as $car): ?><td><?= money((int) round((int) ($car['discount_price'] ?: $car['price']) * 0.1)) ?></td><?php endforeach; ?></tr>

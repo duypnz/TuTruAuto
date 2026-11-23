@@ -13,6 +13,8 @@ $statusLabels = [
     'cancelled' => 'Đã hủy',
 ];
 $payment = is_array($order['payment_info'] ?? null) ? $order['payment_info'] : [];
+$isPreorder = ($payment['inventory_status'] ?? '') === 'preorder';
+$isInventoryUnverified = ($payment['inventory_status'] ?? '') === 'unverified';
 $hasBankDetails = ($payment['bank_name'] ?? '') !== ''
     && ($payment['bank_account'] ?? '') !== ''
     && ($payment['bank_holder'] ?? '') !== '';
@@ -34,6 +36,19 @@ ob_start();
                 <small><?= e($item['quantity']) ?> xe · <?= money($item['unit_price']) ?>/xe</small>
             </div></div>
         <?php endforeach; ?>
+        <?php if ($isPreorder): ?>
+            <div class="preorder-notice" role="status">
+                <strong>Đặt cọc chờ xe về</strong>
+                <span>Thời gian dự kiến khoảng <?= (int) ($payment['lead_time_days'] ?? 21) ?> ngày
+                    <?php if (!empty($payment['estimated_delivery_date'])): ?> (dự kiến từ <?= e(date('d/m/Y', strtotime($payment['estimated_delivery_date']))) ?>).<?php else: ?>; showroom sẽ xác nhận ngày nhận xe cụ thể.<?php endif; ?>
+                </span>
+            </div>
+        <?php elseif ($isInventoryUnverified): ?>
+            <div class="preorder-notice" role="status">
+                <strong>Đang xác nhận tồn kho</strong>
+                <span>Showroom sẽ kiểm tra số xe thực tế và liên hệ bạn trước khi xác nhận nhận tiền cọc.</span>
+            </div>
+        <?php endif; ?>
         <div class="customer-deposit-details">
             <div><span>Giá xe sau ưu đãi</span><strong><?= money($order['total']) ?></strong></div>
             <div><span>Tiền đặt cọc (10%)</span><strong><?= $order['deposit_amount'] !== null ? money($order['deposit_amount']) : money((int) round((int) $order['total'] * 0.1)) ?></strong></div>

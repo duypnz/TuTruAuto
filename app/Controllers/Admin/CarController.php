@@ -232,6 +232,19 @@ final class CarController extends Controller
         }
         $data['price'] = $price === false ? 0 : $price;
 
+        $stockInput = trim((string) ($post['stock_quantity'] ?? ''));
+        $stockQuantity = $stockInput === '' ? null : filter_var($stockInput, FILTER_VALIDATE_INT);
+        if ($stockInput !== '' && ($stockQuantity === false || $stockQuantity < 0)) {
+            $errors['stock_quantity'] = 'Số lượng xe tại cửa hàng phải là số nguyên không âm.';
+        }
+        $data['stock_quantity'] = $stockQuantity === false ? null : $stockQuantity;
+
+        $leadTimeDays = filter_var($post['lead_time_days'] ?? 21, FILTER_VALIDATE_INT);
+        if ($leadTimeDays === false || $leadTimeDays < 1 || $leadTimeDays > 365) {
+            $errors['lead_time_days'] = 'Thời gian dự kiến nhận xe phải từ 1 đến 365 ngày.';
+        }
+        $data['lead_time_days'] = $leadTimeDays === false ? 21 : $leadTimeDays;
+
         $discountPrice = trim((string) ($post['discount_price'] ?? ''));
         if ($discountPrice !== '') {
             $discountPrice = filter_var($discountPrice, FILTER_VALIDATE_INT);

@@ -18,8 +18,62 @@ $interiorColors = is_array($colors['interior'] ?? null) ? $colors['interior'] : 
 $options = is_array($details['options'] ?? null) ? $details['options'] : [];
 $price = (int) ($car['discount_price'] ?: $car['price']);
 $isAdmin = $isAdmin ?? false;
-$stockLabels = ['available' => 'Còn hàng', 'reserved' => 'Đang giữ chỗ', 'sold' => 'Đã bán'];
-$stockLabel = $stockLabels[$car['status']] ?? 'Liên hệ showroom';
+$stockQuantity = isset($car['stock_quantity']) ? max(0, (int) $car['stock_quantity']) : null;
+$leadTimeDays = max(1, (int) ($car['lead_time_days'] ?? 21));
+$stockLabel = $stockQuantity === null
+    ? 'Liên hệ showroom để xác nhận tồn kho'
+    : ($stockQuantity > 0 ? 'Còn ' . $stockQuantity . ' xe tại cửa hàng' : 'Hết xe tại cửa hàng · nhận đặt cọc trước');
+$carDescription = is_string($details['description'] ?? null) && trim($details['description']) !== ''
+    ? $details['description']
+    : (string) ($car['description'] ?? '');
+$displayList = static fn (mixed $items): array => is_array($items)
+    ? array_values(array_filter($items, static fn (mixed $item): bool => is_scalar($item) && trim((string) $item) !== ''))
+    : [];
+$descriptionSections = [];
+$engineDetails = $displayList([
+    $specs['engine'] ?? null,
+    $specs['displacement'] ?? null,
+    $specs['power'] ?? null,
+    $specs['torque'] ?? null,
+    $specs['transmission'] ?? $car['transmission'],
+    $specs['fuel'] ?? $car['fuel'],
+]);
+if ($engineDetails !== []) {
+    $descriptionSections[] = [
+        'title' => 'Động cơ và khả năng vận hành',
+        'text' => 'Cấu hình được công bố cho mẫu xe gồm ' . implode(' · ', $engineDetails)
+            . '. Mức tiêu hao thực tế và cảm giác vận hành còn phụ thuộc phiên bản, tải trọng, điều kiện đường sá và thói quen lái.',
+    ];
+}
+$spaceDetails = $displayList([
+    $specs['dimensions'] ?? null,
+    $specs['wheelbase'] ?? null,
+    $specs['seats'] ?? null,
+    $specs['trunk'] ?? null,
+]);
+if ($spaceDetails !== []) {
+    $descriptionSections[] = [
+        'title' => 'Không gian và tính thực dụng',
+        'text' => 'Thông tin kích thước và bố trí xe hiện có: ' . implode(' · ', $spaceDetails)
+            . '. Khi xem xe, khách hàng nên ngồi thử các hàng ghế, kiểm tra tư thế ra vào và thử không gian hành lý theo nhu cầu sử dụng thường ngày.',
+    ];
+}
+$safetyDetails = $displayList($details['safety'] ?? []);
+if ($safetyDetails !== []) {
+    $descriptionSections[] = [
+        'title' => 'Hệ thống an toàn đáng chú ý',
+        'text' => 'Danh sách trang bị đang ghi nhận cho xe: ' . implode(' · ', $safetyDetails)
+            . '. Trang bị có thể khác theo phiên bản và năm sản xuất; vui lòng đối chiếu xe thực tế trước khi đặt cọc.',
+    ];
+}
+$comfortDetails = $displayList($details['comfort'] ?? []);
+if ($comfortDetails !== []) {
+    $descriptionSections[] = [
+        'title' => 'Tiện nghi trong cabin',
+        'text' => 'Các tiện nghi được ghi nhận gồm: ' . implode(' · ', $comfortDetails)
+            . '. Khách hàng có thể yêu cầu nhân viên hướng dẫn thao tác và kiểm tra hoạt động của từng thiết bị trong buổi xem xe.',
+    ];
+}
 $conditionLabel = ($car['condition_type'] ?? 'new') === 'used' ? 'Xe đã qua sử dụng' : 'Xe mới';
 $specRows = [
     'model_line' => 'Dòng xe',
@@ -130,7 +184,7 @@ ob_start();
                 <div class="detail-meta-line">
                     <span>Mã xe <strong><?= e($car['car_code'] ?: 'TTA-' . str_pad((string) $car['id'], 6, '0', STR_PAD_LEFT)) ?></strong></span>
                     <span><?= e($specs['category'] ?? $car['body_type']) ?></span>
-                    <span class="stock-state <?= $car['status'] === 'available' ? 'is-available' : '' ?>"><?= e($stockLabel) ?></span>
+                    <span class="stock-state <?= $stockQuantity === null ? '' : ($stockQuantity > 0 ? 'is-available' : 'is-preorder') ?>"><?= e($stockLabel) ?></span>
                 </div>
 
                 <div class="detail-price" id="detail-price" data-base-price="<?= e($price) ?>">
@@ -213,23 +267,32 @@ ob_start();
                         <small class="voucher-hint">Mã mẫu TUTRU5: giảm 5% cho đơn từ 500 triệu đồng.</small>
                     </div>
 
+                    <?php if (isCustomerLoggedIn()): ?>
+                    <fieldset class="deposit-payment-method">
+                        <legend>Phương thức thanh toán tiền cọc</legend>
+                        <label class="payment-choice">
+                            <input type="radio" name="payment_method" value="bank" checked>
+                            <span class="payment-choice-icon" aria-hidden="true">↗</span>
+                            <span><strong>Chuyển khoản ngân hàng</strong><small>Nhận hướng dẫn và thông tin chuyển khoản sau khi tạo yêu cầu.</small></span>
+                        </label>
+                        <label class="payment-choice">
+                            <input type="radio" name="payment_method" value="cash">
+                            <span class="payment-choice-icon" aria-hidden="true">₫</span>
+                            <span><strong>Nộp tiền tại showroom</strong><small>Nhân viên xác nhận tiền cọc trực tiếp và cấp phiếu thu.</small></span>
+                        </label>
+                    </fieldset>
+                    <?php endif; ?>
+                    <?php if (isCustomerLoggedIn()): ?><p class="deposit-amount-preview" data-deposit-preview>Tiền cọc dự kiến (10%): <strong><?= money((int) round($price * 0.1)) ?></strong></p><?php endif; ?>
+                    <?php if (isCustomerLoggedIn() && $stockQuantity === 0): ?><p class="preorder-notice"><strong>Đặt trước xe chưa có sẵn</strong><span>Thời gian dự kiến <?= $leadTimeDays ?> ngày; showroom sẽ liên hệ xác nhận lịch giao trước khi chốt đơn.</span></p><?php elseif (isCustomerLoggedIn() && $stockQuantity === null): ?><p class="preorder-notice"><strong>Tồn kho chưa được xác nhận</strong><span>Showroom sẽ kiểm tra xe thực tế và xác nhận khả năng giao xe trước khi tiếp nhận tiền cọc.</span></p><?php endif; ?>
                     <div class="purchase-actions">
                         <?php if (isCustomerLoggedIn()): ?>
-                            <button class="button button-dark" name="action" value="deposit" type="submit" <?= $car['status'] !== 'available' ? 'disabled' : '' ?>>Đặt cọc xe</button>
+                            <button class="button button-dark" name="action" value="deposit" type="submit" <?= $car['status'] === 'hidden' ? 'disabled' : '' ?>><?= $stockQuantity === null ? 'Yêu cầu đặt cọc · xác nhận tồn kho' : ($stockQuantity > 0 ? 'Đặt cọc xe' : 'Đặt cọc trước · chờ xe về') ?></button>
                         <?php elseif ($isAdmin): ?>
                             <p class="deposit-login-notice">Tài khoản quản trị chỉ dùng quản lý website, không thể đặt cọc xe.</p>
                         <?php else: ?>
                             <a class="button button-dark" href="<?= e(url('/dang-nhap')) ?>">Đăng nhập để đặt cọc</a>
                         <?php endif; ?>
                     </div>
-                    <?php if (isCustomerLoggedIn()): ?>
-                    <fieldset class="deposit-payment-method">
-                        <legend>Phương thức thanh toán tiền cọc</legend>
-                        <label><input type="radio" name="payment_method" value="bank" checked> Chuyển khoản qua mã QR</label>
-                        <label><input type="radio" name="payment_method" value="cash"> Tiền mặt tại showroom</label>
-                    </fieldset>
-                    <?php endif; ?>
-                    <?php if (isCustomerLoggedIn()): ?><p class="deposit-amount-preview" data-deposit-preview>Tiền cọc dự kiến (10%): <strong><?= money((int) round($price * 0.1)) ?></strong></p><?php endif; ?>
                     <div class="contact-fields">
                         <label>Họ tên<input name="customer_name" maxlength="120" value="<?= e($_SESSION['user']['name'] ?? '') ?>" placeholder="Tên của bạn"></label>
                         <label>Số điện thoại<input name="phone" type="tel" maxlength="30" placeholder="Số điện thoại liên hệ"></label>
@@ -262,9 +325,9 @@ ob_start();
                         'transmission' => $car['transmission'],
                         'fuel' => $car['fuel'],
                         'category' => $car['body_type'],
-                        default => 'Chưa cập nhật',
+                        default => 'Liên hệ showroom để xác nhận',
                     }; ?>
-                    <div><span><?= e($label) ?></span><strong><?= e($value) ?></strong></div>
+                    <div><span><?= e($label) ?></span><strong><?= e(is_scalar($value) && trim((string) $value) !== '' ? $value : 'Liên hệ showroom để xác nhận') ?></strong></div>
                 <?php endforeach; ?>
                 <div><span>Hãng xe</span><strong><?= e($car['brand']) ?></strong></div>
                 <div><span>Năm sản xuất</span><strong><?= e($car['year']) ?></strong></div>
@@ -278,7 +341,7 @@ ob_start();
             <div class="section-heading"><div><span class="eyebrow"><span></span> TRANG BỊ</span><h2>An toàn & tiện nghi</h2></div></div>
             <div class="feature-columns">
                 <?php foreach ($features as $key => $feature): ?>
-                    <?php $items = is_array($details[$key] ?? null) ? $details[$key] : []; ?>
+                    <?php $items = $displayList($details[$key] ?? []); ?>
                     <article class="feature-card"><h3><span><?= e($feature['icon']) ?></span><?= e($feature['title']) ?></h3>
                         <?php if ($items): ?><ul><?php foreach ($items as $item): ?><li><span aria-hidden="true">✓</span><?= e($item) ?></li><?php endforeach; ?></ul>
                         <?php else: ?><p>Chưa có dữ liệu trang bị cho xe này.</p><?php endif; ?>
@@ -294,10 +357,14 @@ ob_start();
                 <button type="button" role="tab" id="tab-pros" aria-controls="panel-pros" aria-selected="false">Ưu & nhược điểm</button>
             </div>
             <div id="panel-description" class="tab-panel" role="tabpanel" aria-labelledby="tab-description">
-                <p><?= nl2br(e($car['description'] ?: 'Xe mới được Tu Tru Auto tuyển chọn theo tiêu chí minh bạch về nguồn gốc, cấu hình, lịch sử bảo dưỡng và điều kiện cung cấp. Mỗi phiên bản đều có thông tin giá niêm yết, trang bị, màu sắc và gói tùy chọn rõ ràng để khách hàng dễ dàng đối chiếu trước khi mua. Chuyên viên showroom có thể hỗ trợ lái thử, tư vấn tài chính, xác nhận cấu hình thực tế và các chính sách bảo hành áp dụng cho xe giao đến.')) ?></p>
+                <p><?= nl2br(e($carDescription !== '' ? $carDescription : 'Thông tin mô tả chi tiết của mẫu xe này đang được cập nhật. Vui lòng liên hệ showroom để xác nhận cấu hình, trang bị, điều kiện giao xe và chính sách áp dụng cho đúng phiên bản.')) ?></p>
+                <?php foreach ($descriptionSections as $section): ?>
+                    <h3><?= e($section['title']) ?></h3>
+                    <p><?= e($section['text']) ?></p>
+                <?php endforeach; ?>
             </div>
             <div id="panel-highlights" class="tab-panel" role="tabpanel" aria-labelledby="tab-highlights" hidden>
-                <ul><?php foreach ((array) ($details['highlights'] ?? [
+                <ul><?php foreach ($displayList($details['highlights'] ?? [
                     'Thiết kế ngoại thất hiện đại, phù hợp nhiều hoàn cảnh sử dụng',
                     'Cabin bố trí khoa học, dễ dàng điều chỉnh ghế và hệ thống giải trí',
                     'Trang bị an toàn chủ động và hỗ trợ lái theo cấu hình của từng phiên bản',
@@ -307,12 +374,12 @@ ob_start();
             </div>
             <div id="panel-pros" class="tab-panel" role="tabpanel" aria-labelledby="tab-pros" hidden>
                 <div class="pros-cons">
-                    <div><h3>Ưu điểm</h3><ul><?php foreach ((array) ($details['pros'] ?? [
+                    <div><h3>Ưu điểm</h3><ul><?php foreach ($displayList($details['pros'] ?? [
                         'Cấu hình rõ ràng, có thể lựa chọn thêm các gói trang bị phù hợp nhu cầu',
                         'Được hỗ trợ lái thử để đánh giá cảm giác vận hành thực tế',
                         'Có tư vấn tài chính, bảo hành chính hãng và quy trình bàn giao minh bạch'
                     ]) as $item): ?><li><?= e($item) ?></li><?php endforeach; ?></ul></div>
-                    <div><h3>Điểm cần cân nhắc</h3><ul><?php foreach ((array) ($details['cons'] ?? [
+                    <div><h3>Điểm cần cân nhắc</h3><ul><?php foreach ($displayList($details['cons'] ?? [
                         'Giá lăn bánh, phí biển số và chi phí bảo hiểm có thể thay đổi theo khu vực',
                         'Trang bị và màu xe thực tế cần đối chiếu lại theo phiên bản đang phân phối',
                         'Mức tiêu thụ và cảm giác vận hành có thể khác nhau tùy tải trọng, địa hình và thói quen lái'

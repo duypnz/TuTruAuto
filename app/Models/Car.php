@@ -266,11 +266,11 @@ final class Car
         $stmt = $this->db->prepare(
             'INSERT INTO cars
             (name, slug, brand, year, body_type, fuel, transmission,
-             price, image_url, badge, description, featured, status,
+             price, stock_quantity, lead_time_days, image_url, badge, description, featured, status,
              condition_type, discount_price, car_code, gallery_json, video_url, details_json)
             VALUES
             (:name, :slug, :brand, :year, :body_type, :fuel, :transmission,
-             :price, :image_url, :badge, :description, :featured, :status,
+             :price, :stock_quantity, :lead_time_days, :image_url, :badge, :description, :featured, :status,
              :condition_type, :discount_price, :car_code, :gallery_json, :video_url, :details_json)'
         );
 
@@ -283,6 +283,8 @@ final class Car
             'fuel' => $data['fuel'],
             'transmission' => $data['transmission'],
             'price' => $data['price'],
+            'stock_quantity' => $data['stock_quantity'],
+            'lead_time_days' => $data['lead_time_days'],
             'image_url' => $data['image_url'],
             'badge' => $data['badge'] !== '' ? $data['badge'] : null,
             'description' => $data['description'] !== '' ? $data['description'] : null,
@@ -316,6 +318,8 @@ final class Car
                 fuel = :fuel,
                 transmission = :transmission,
                 price = :price,
+                stock_quantity = :stock_quantity,
+                lead_time_days = :lead_time_days,
                 image_url = :image_url,
                 badge = :badge,
                 description = :description,
@@ -340,6 +344,8 @@ final class Car
             'fuel' => $data['fuel'],
             'transmission' => $data['transmission'],
             'price' => $data['price'],
+            'stock_quantity' => $data['stock_quantity'],
+            'lead_time_days' => $data['lead_time_days'],
             'image_url' => $data['image_url'],
             'badge' => $data['badge'] !== '' ? $data['badge'] : null,
             'description' => $data['description'] !== '' ? $data['description'] : null,

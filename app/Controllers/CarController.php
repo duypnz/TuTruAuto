@@ -69,9 +69,12 @@ final class CarController extends Controller
             $car['gallery'],
             static fn ($image): bool => is_string($image) && trim($image) !== ''
         ));
-        if ($car['gallery'] === []) {
-            $car['gallery'] = [$car['image_url']];
-        }
+        $mainImage = trim((string) $car['image_url']);
+        $car['gallery'] = array_values(array_filter(
+            $car['gallery'],
+            static fn (string $image): bool => trim($image) !== $mainImage
+        ));
+        array_unshift($car['gallery'], $mainImage);
         $this->render('cars/show', [
             'car' => $car,
             'relatedCars' => (new Car())->related($car),
@@ -103,8 +106,8 @@ final class CarController extends Controller
             echo 'Yêu cầu không hợp lệ.';
             return;
         }
-        if ($action === 'deposit' && $car['status'] !== 'available') {
-            $_SESSION['_flash'] = 'Xe hiện không còn sẵn sàng để đặt cọc.';
+        if ($action === 'deposit' && $car['status'] === 'hidden') {
+            $_SESSION['_flash'] = 'Mẫu xe này hiện không nhận đặt cọc.';
             $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
         }
 
@@ -160,6 +163,17 @@ final class CarController extends Controller
             }
             $paymentDetails = (new SiteSetting())->paymentDetails();
             $paymentDetails['method'] = $paymentMethod;
+            $stockQuantity = isset($car['stock_quantity']) ? (int) $car['stock_quantity'] : null;
+            $inStock = $stockQuantity !== null && $stockQuantity > 0;
+            $paymentDetails['inventory_status'] = $stockQuantity === null
+                ? 'unverified'
+                : ($inStock ? 'in_stock' : 'preorder');
+            $paymentDetails['lead_time_days'] = max(1, (int) ($car['lead_time_days'] ?? 21));
+            if ($stockQuantity === 0) {
+                $paymentDetails['estimated_delivery_date'] = (new \DateTimeImmutable())
+                    ->modify('+' . $paymentDetails['lead_time_days'] . ' days')
+                    ->format('Y-m-d');
+            }
             $orderId = (new CustomerOrder())->create([
                 'user_id' => $userId,
                 'order_type' => 'deposit',
@@ -182,7 +196,11 @@ final class CarController extends Controller
                 'unit_price' => $unitPrice,
                 'options' => $selection['labels'],
             ]]);
-            $_SESSION['_success'] = 'Đã tạo yêu cầu đặt cọc #' . $orderId . '. Tiền cọc bằng 10% giá xe.';
+            $_SESSION['_success'] = match ($paymentDetails['inventory_status']) {
+                'in_stock' => 'Đã tạo yêu cầu đặt cọc #' . $orderId . '. Tiền cọc bằng 10% giá xe.',
+                'preorder' => 'Đã tạo yêu cầu đặt cọc trước #' . $orderId . '. Showroom sẽ xác nhận thời gian nhận xe dự kiến.',
+                default => 'Đã tạo yêu cầu #' . $orderId . '. Showroom sẽ kiểm tra tồn kho trước khi xác nhận nhận cọc.',
+            };
             $this->redirect('/tai-khoan/don-hang/' . $orderId);
         }
         (new CustomerInquiry())->create(
