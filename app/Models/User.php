@@ -29,6 +29,71 @@ final class User
         return (int) $this->db->lastInsertId();
     }
 
+    public function allForAdmin(): array
+    {
+        return $this->db->query(
+            'SELECT id, name, email, phone, role, status, created_at
+             FROM users
+             ORDER BY created_at DESC, id DESC'
+        )->fetchAll();
+    }
+
+    public function findAccountForAdmin(int $id): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT id, name, email, role, status FROM users WHERE id = :id LIMIT 1'
+        );
+        $stmt->execute(['id' => $id]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    public function activeAdminCount(): int
+    {
+        return (int) $this->db->query(
+            "SELECT COUNT(*) FROM users WHERE role = 'admin' AND status = 'active'"
+        )->fetchColumn();
+    }
+
+    public function createManaged(
+        string $name,
+        string $email,
+        string $phone,
+        string $passwordHash,
+        string $role
+    ): int {
+        if (!in_array($role, ['customer', 'admin'], true)) {
+            throw new \InvalidArgumentException('User role is not supported.');
+        }
+        $stmt = $this->db->prepare(
+            'INSERT INTO users (name, email, phone, password, role, status)
+             VALUES (:name, :email, :phone, :password, :role, :status)'
+        );
+        $stmt->execute([
+            'name' => $name,
+            'email' => $email,
+            'phone' => $phone !== '' ? $phone : null,
+            'password' => $passwordHash,
+            'role' => $role,
+            'status' => 'active',
+        ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function updateManagedAccess(int $id, string $role, string $status): bool
+    {
+        if (!in_array($role, ['customer', 'admin'], true) || !in_array($status, ['active', 'inactive', 'locked'], true)) {
+            throw new \InvalidArgumentException('User access settings are not supported.');
+        }
+        $stmt = $this->db->prepare(
+            'UPDATE users SET role = :role, status = :status WHERE id = :id'
+        );
+        $stmt->execute(['id' => $id, 'role' => $role, 'status' => $status]);
+
+        return $stmt->rowCount() > 0;
+    }
+
     public function countAll(): int
     {
         return (int) $this->db->query('SELECT COUNT(*) FROM users')->fetchColumn();

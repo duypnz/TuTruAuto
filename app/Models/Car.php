@@ -20,12 +20,13 @@ final class Car
     {
         $stmt = $this->db->prepare(
             'SELECT * FROM cars
-             WHERE status = :status
+             WHERE status = :status AND condition_type = :condition_type
              ORDER BY featured DESC, created_at DESC
              LIMIT :limit'
         );
 
         $stmt->bindValue(':status', 'available');
+        $stmt->bindValue(':condition_type', 'new');
         $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
         $stmt->execute();
 
@@ -35,14 +36,14 @@ final class Car
     public function countAll(): int
     {
         return (int) $this->db
-            ->query('SELECT COUNT(*) FROM cars')
+            ->query("SELECT COUNT(*) FROM cars WHERE condition_type = 'new'")
             ->fetchColumn();
     }
 
     public function search(array $filters): array
     {
-        $sql = 'SELECT * FROM cars WHERE status = :status';
-        $params = ['status' => 'available'];
+        $sql = 'SELECT * FROM cars WHERE status = :status AND condition_type = :condition_type';
+        $params = ['status' => 'available', 'condition_type' => 'new'];
 
         foreach (
             [
@@ -75,18 +76,124 @@ final class Car
         return $stmt->fetchAll();
     }
 
+    public function findByIds(array $ids): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map(
+                static fn (mixed $id): int => is_scalar($id) ? (int) $id : 0,
+                $ids
+            ),
+            static fn (int $id): bool => $id > 0
+        )));
+        if ($ids === []) {
+            return [];
+        }
+        $placeholders = [];
+        $params = ['status' => 'available', 'condition_type' => 'new'];
+        foreach ($ids as $index => $id) {
+            $placeholder = 'car_id_' . $index;
+            $placeholders[] = ':' . $placeholder;
+            $params[$placeholder] = $id;
+        }
+        $stmt = $this->db->prepare(
+            'SELECT * FROM cars
+             WHERE status = :status AND condition_type = :condition_type AND id IN (' . implode(', ', $placeholders) . ')
+             ORDER BY id'
+        );
+        $stmt->execute($params);
+
+        return $stmt->fetchAll();
+    }
+
     public function findBySlug(string $slug): ?array
     {
         $stmt = $this->db->prepare(
             'SELECT * FROM cars
-             WHERE slug = :slug AND status = :status
+             WHERE slug = :slug AND status <> :status AND condition_type = :condition_type
              LIMIT 1'
         );
 
         $stmt->execute([
             'slug' => $slug,
-            'status' => 'available'
+            'status' => 'hidden',
+            'condition_type' => 'new'
         ]);
+
+        return $stmt->fetch() ?: null;
+    }
+
+    public function related(array $car, int $limit = 4): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT * FROM cars
+             WHERE status = :status AND condition_type = :condition_type AND id <> :id
+               AND (brand = :brand OR body_type = :body_type)
+             ORDER BY (brand = :brand_order) DESC, featured DESC, created_at DESC
+             LIMIT :limit'
+        );
+        $stmt->bindValue(':status', 'available');
+        $stmt->bindValue(':condition_type', 'new');
+        $stmt->bindValue(':id', (int) $car['id'], PDO::PARAM_INT);
+        $stmt->bindValue(':brand', (string) $car['brand']);
+        $stmt->bindValue(':body_type', (string) $car['body_type']);
+        $stmt->bindValue(':brand_order', (string) $car['brand']);
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function reviews(int $carId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT r.rating, r.content, r.created_at, u.name
+             FROM car_reviews r
+             INNER JOIN users u ON u.id = r.user_id
+             WHERE r.car_id = :car_id
+             ORDER BY r.created_at DESC
+             LIMIT 30'
+        );
+        $stmt->execute(['car_id' => $carId]);
+
+        return $stmt->fetchAll();
+    }
+
+    public function reviewSummary(int $carId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT COUNT(*) AS total, COALESCE(AVG(rating), 0) AS average
+             FROM car_reviews WHERE car_id = :car_id'
+        );
+        $stmt->execute(['car_id' => $carId]);
+
+        return $stmt->fetch() ?: ['total' => 0, 'average' => 0];
+    }
+
+    public function addReview(int $carId, int $userId, int $rating, string $content): void
+    {
+        $stmt = $this->db->prepare(
+            'INSERT INTO car_reviews (car_id, user_id, rating, content)
+             VALUES (:car_id, :user_id, :rating, :content)
+             ON DUPLICATE KEY UPDATE rating = VALUES(rating), content = VALUES(content), created_at = CURRENT_TIMESTAMP'
+        );
+        $stmt->execute([
+            'car_id' => $carId,
+            'user_id' => $userId,
+            'rating' => $rating,
+            'content' => $content,
+        ]);
+    }
+
+    public function voucher(string $code): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT code, discount_type, discount_value, minimum_order
+             FROM car_vouchers
+             WHERE code = :code AND is_active = 1
+               AND starts_at <= CURRENT_TIMESTAMP AND ends_at >= CURRENT_TIMESTAMP
+             LIMIT 1'
+        );
+        $stmt->execute(['code' => strtoupper(trim($code))]);
 
         return $stmt->fetch() ?: null;
     }
@@ -116,13 +223,15 @@ final class Car
 
         $sql = 'SELECT * FROM cars
                 WHERE status = :status
+                AND condition_type = :condition_type
                 AND slug IN (' . implode(', ', $placeholders) . ')
                 ORDER BY created_at DESC';
 
         $stmt = $this->db->prepare($sql);
 
         $params = [
-            'status' => 'available'
+            'status' => 'available',
+            'condition_type' => 'new'
         ];
 
         foreach ($slugs as $index => $slug) {
@@ -157,10 +266,12 @@ final class Car
         $stmt = $this->db->prepare(
             'INSERT INTO cars
             (name, slug, brand, year, body_type, fuel, transmission,
-             price, image_url, badge, description, featured, status)
+             price, stock_quantity, lead_time_days, image_url, badge, description, featured, status,
+             condition_type, discount_price, car_code, gallery_json, video_url, details_json)
             VALUES
             (:name, :slug, :brand, :year, :body_type, :fuel, :transmission,
-             :price, :image_url, :badge, :description, :featured, :status)'
+             :price, :stock_quantity, :lead_time_days, :image_url, :badge, :description, :featured, :status,
+             :condition_type, :discount_price, :car_code, :gallery_json, :video_url, :details_json)'
         );
 
         $stmt->execute([
@@ -172,14 +283,27 @@ final class Car
             'fuel' => $data['fuel'],
             'transmission' => $data['transmission'],
             'price' => $data['price'],
+            'stock_quantity' => $data['stock_quantity'],
+            'lead_time_days' => $data['lead_time_days'],
             'image_url' => $data['image_url'],
             'badge' => $data['badge'] !== '' ? $data['badge'] : null,
             'description' => $data['description'] !== '' ? $data['description'] : null,
             'featured' => $data['featured'],
             'status' => $data['status'],
+            'condition_type' => $data['condition_type'],
+            'discount_price' => $data['discount_price'],
+            'car_code' => $data['car_code'] !== '' ? $data['car_code'] : null,
+            'gallery_json' => $data['gallery_json'],
+            'video_url' => $data['video_url'],
+            'details_json' => $data['details_json'],
         ]);
 
-        return (int) $this->db->lastInsertId();
+        $id = (int) $this->db->lastInsertId();
+        $code = $data['car_code'] !== '' ? $data['car_code'] : 'TTA-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+        $updateCode = $this->db->prepare('UPDATE cars SET car_code = :code WHERE id = :id');
+        $updateCode->execute(['code' => $code, 'id' => $id]);
+
+        return $id;
     }
 
     public function update(int $id, array $data): void
@@ -194,11 +318,19 @@ final class Car
                 fuel = :fuel,
                 transmission = :transmission,
                 price = :price,
+                stock_quantity = :stock_quantity,
+                lead_time_days = :lead_time_days,
                 image_url = :image_url,
                 badge = :badge,
                 description = :description,
                 featured = :featured,
-                status = :status
+                status = :status,
+                condition_type = :condition_type,
+                discount_price = :discount_price,
+                car_code = :car_code,
+                gallery_json = :gallery_json,
+                video_url = :video_url,
+                details_json = :details_json
              WHERE id = :id'
         );
 
@@ -212,11 +344,19 @@ final class Car
             'fuel' => $data['fuel'],
             'transmission' => $data['transmission'],
             'price' => $data['price'],
+            'stock_quantity' => $data['stock_quantity'],
+            'lead_time_days' => $data['lead_time_days'],
             'image_url' => $data['image_url'],
             'badge' => $data['badge'] !== '' ? $data['badge'] : null,
             'description' => $data['description'] !== '' ? $data['description'] : null,
             'featured' => $data['featured'],
             'status' => $data['status'],
+            'condition_type' => $data['condition_type'],
+            'discount_price' => $data['discount_price'],
+            'car_code' => $data['car_code'],
+            'gallery_json' => $data['gallery_json'],
+            'video_url' => $data['video_url'],
+            'details_json' => $data['details_json'],
         ]);
     }
 
@@ -248,6 +388,20 @@ final class Car
 
             $stmt->execute(['slug' => $slug]);
         }
+
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function carCodeExists(string $code, ?int $excludeId = null): bool
+    {
+        $sql = 'SELECT COUNT(*) FROM cars WHERE car_code = :code';
+        $params = ['code' => $code];
+        if ($excludeId !== null) {
+            $sql .= ' AND id <> :id';
+            $params['id'] = $excludeId;
+        }
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
 
         return (int) $stmt->fetchColumn() > 0;
     }
