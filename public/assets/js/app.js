@@ -1,6 +1,18 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
+    const navLinks = Array.from(document.querySelectorAll('.main-nav a'));
+    const syncHashActiveLink = () => {
+        if (window.location.pathname === '/' || window.location.hash) {
+            navLinks.forEach((link) => {
+                const href = link.getAttribute('href') || '';
+                link.classList.toggle('is-active', href.includes('#dich-vu') && window.location.hash === '#dich-vu');
+            });
+        }
+    };
+    syncHashActiveLink();
+    window.addEventListener('hashchange', syncHashActiveLink);
+
     // Mở và đóng menu trên điện thoại
     const toggle = document.querySelector('.menu-toggle');
     const nav = document.querySelector('.main-nav');

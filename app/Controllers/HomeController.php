@@ -28,4 +28,12 @@ final class HomeController extends Controller
             'csrf' => Csrf::token(),
         ]);
     }
+
+    public function about(): void
+    {
+        $this->render('home/about', [
+            'csrf' => Csrf::token(),
+            'featuredCars' => (new Car())->featured(2),
+        ]);
+    }
 }

@@ -63,10 +63,10 @@ $adminNavigation = [
             </a>
 
             <nav class="main-nav">
-                <a href="<?= e(url('/')) ?>">Trang chủ</a>
-                <a href="<?= e(url('/xe')) ?>">Mua xe</a>
+                <a class="<?= $layoutPath === '/' ? 'is-active' : '' ?>" href="<?= e(url('/')) ?>">Trang chủ</a>
+                <a class="<?= str_starts_with($layoutPath, '/xe') || str_starts_with($layoutPath, '/so-sanh') ? 'is-active' : '' ?>" href="<?= e(url('/xe')) ?>">Mua xe</a>
                 <a href="<?= e(url('/#dich-vu')) ?>">Dịch vụ</a>
-                <a href="<?= e(url('/#ve-chung-toi')) ?>">Về chúng tôi</a>
+                <a class="<?= $layoutPath === '/ve-chung-toi' ? 'is-active' : '' ?>" href="<?= e(url('/ve-chung-toi')) ?>">Về chúng tôi</a>
             </nav>
 
             <?php if (isset($_SESSION['user'])): ?>
@@ -208,6 +208,7 @@ $adminNavigation = [
 
             <nav class="footer-links" aria-label="Khám phá">
                 <h4>Khám phá</h4>
+                <a href="<?= e(url('/ve-chung-toi')) ?>">Về Tu Tru Auto</a>
                 <a href="<?= e(url('/xe')) ?>">Tất cả xe</a>
                 <a href="<?= e(url('/xe?body_type=SUV')) ?>">Xe SUV</a>
                 <a href="<?= e(url('/xe?body_type=Sedan')) ?>">Xe Sedan</a>
