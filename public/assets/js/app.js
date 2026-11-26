@@ -183,16 +183,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const depositPreview = orderForm.querySelector('[data-deposit-preview] strong');
         voucherButton.addEventListener('click', async () => {
             const result = document.querySelector('#voucher-result');
-            const code = document.querySelector('#voucher-code');
-            const csrf = orderForm.querySelector('[name="_csrf"]');
-            const price = updateCarPrice(orderForm);
+        const code = document.querySelector('#voucher-code');
+        const csrf = orderForm.querySelector('[name="_csrf"]');
+        const carSlug = orderForm.querySelector('[name="car_slug"]');
+        const price = updateCarPrice(orderForm);
+
             result.textContent = 'Đang kiểm tra mã...';
             result.classList.remove('is-success', 'is-error');
             try {
                 const response = await fetch(voucherButton.dataset.endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-                    body: new URLSearchParams({ _csrf: csrf.value, code: code.value.trim(), price: String(price) })
+                    body: new URLSearchParams({
+                        _csrf: csrf.value,
+                        code: code.value.trim(),
+                        price: String(price),
+                        car_slug: carSlug ? carSlug.value : ''
+                    })
                 });
                 const data = await response.json();
                 result.textContent = data.message;

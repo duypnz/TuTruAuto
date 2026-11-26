@@ -17,6 +17,7 @@ $adminNavigation = [
     ['path' => '/admin/xe', 'prefix' => true, 'label' => 'Quản lý xe', 'icon' => '▣'],
     ['path' => '/admin/danh-muc', 'prefix' => true, 'label' => 'Hãng & kiểu dáng', 'icon' => '◈'],
     ['path' => '/admin/don-hang', 'prefix' => true, 'label' => 'Đơn đặt cọc', 'icon' => '▤'],
+    ['path' => '/admin/voucher', 'prefix' => true, 'label' => 'Mã giảm giá', 'icon' => '％'],
     ['path' => '/admin/lien-he', 'prefix' => true, 'label' => 'Liên hệ khách hàng', 'icon' => '✉'],
     ['path' => '/admin/tai-khoan', 'prefix' => true, 'label' => 'Tài khoản', 'icon' => '♙'],
     ['path' => '/admin/thanh-toan', 'prefix' => true, 'label' => 'Thanh toán', 'icon' => '₫'],

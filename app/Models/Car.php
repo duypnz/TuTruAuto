@@ -184,20 +184,6 @@ final class Car
         ]);
     }
 
-    public function voucher(string $code): ?array
-    {
-        $stmt = $this->db->prepare(
-            'SELECT code, discount_type, discount_value, minimum_order
-             FROM car_vouchers
-             WHERE code = :code AND is_active = 1
-               AND starts_at <= CURRENT_TIMESTAMP AND ends_at >= CURRENT_TIMESTAMP
-             LIMIT 1'
-        );
-        $stmt->execute(['code' => strtoupper(trim($code))]);
-
-        return $stmt->fetch() ?: null;
-    }
-
     /**
      * Lấy danh sách xe theo nhiều slug.
      * Dùng cho chức năng xe yêu thích.

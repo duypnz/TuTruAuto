@@ -59,12 +59,25 @@ CREATE TABLE IF NOT EXISTS car_reviews (
 CREATE TABLE IF NOT EXISTS car_vouchers (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     code VARCHAR(40) NOT NULL UNIQUE,
+    name VARCHAR(120) NULL,
     discount_type ENUM('percent', 'fixed') NOT NULL,
     discount_value DECIMAL(15,0) NOT NULL,
+    max_discount DECIMAL(15,0) NULL,
     minimum_order DECIMAL(15,0) NOT NULL DEFAULT 0,
+    scope_type ENUM('all', 'brand', 'car') NOT NULL DEFAULT 'all',
+    scope_value VARCHAR(190) NULL,
+    user_id BIGINT UNSIGNED NULL,
     starts_at DATETIME NOT NULL,
     ends_at DATETIME NOT NULL,
-    is_active TINYINT(1) NOT NULL DEFAULT 1
+    is_active TINYINT(1) NOT NULL DEFAULT 1,
+    usage_limit INT UNSIGNED NULL,
+    usage_per_user INT UNSIGNED NULL,
+    used_count INT UNSIGNED NOT NULL DEFAULT 0,
+    deleted_at DATETIME NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_car_vouchers_lookup (is_active, deleted_at, ends_at),
+    CONSTRAINT fk_car_vouchers_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS car_inquiries (
@@ -132,4 +145,21 @@ CREATE TABLE IF NOT EXISTS customer_order_items (
     options_json LONGTEXT NOT NULL,
     CONSTRAINT fk_customer_order_items_order FOREIGN KEY (order_id) REFERENCES customer_orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_customer_order_items_car FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS voucher_usages (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    voucher_id BIGINT UNSIGNED NOT NULL,
+    code VARCHAR(40) NOT NULL,
+    user_id BIGINT UNSIGNED NULL,
+    order_id BIGINT UNSIGNED NULL,
+    subtotal DECIMAL(15,0) NOT NULL,
+    discount_amount DECIMAL(15,0) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_voucher_usages_voucher (voucher_id),
+    INDEX idx_voucher_usages_user (voucher_id, user_id),
+    INDEX idx_voucher_usages_order (order_id),
+    CONSTRAINT fk_voucher_usages_voucher FOREIGN KEY (voucher_id) REFERENCES car_vouchers(id) ON DELETE CASCADE,
+    CONSTRAINT fk_voucher_usages_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_voucher_usages_order FOREIGN KEY (order_id) REFERENCES customer_orders(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
