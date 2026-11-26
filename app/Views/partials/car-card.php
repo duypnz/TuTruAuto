@@ -28,6 +28,13 @@
             <span>◉ <?= e($car['fuel']) ?></span>
             <span>↗ <?= e($car['body_type']) ?></span>
         </div>
+        <p class="car-stock <?= $car['stock_quantity'] !== null && (int) $car['stock_quantity'] > 0 ? 'is-available' : ($car['stock_quantity'] === null ? '' : 'is-preorder') ?>">
+            <?= $car['stock_quantity'] === null
+                ? 'Liên hệ showroom để xác nhận tồn kho'
+                : ((int) $car['stock_quantity'] > 0
+                    ? 'Còn ' . (int) $car['stock_quantity'] . ' xe tại cửa hàng'
+                    : 'Nhận đặt cọc · dự kiến ' . (int) ($car['lead_time_days'] ?? 21) . ' ngày') ?>
+        </p>
 
         <div class="car-bottom">
             <strong><?= e(car_price_label($car)) ?></strong>

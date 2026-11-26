@@ -5,6 +5,7 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Models\Car;
+use App\Models\CustomerOrder;
 use App\Models\User;
 
 final class AdminController extends Controller
@@ -20,10 +21,13 @@ final class AdminController extends Controller
             return;
         }
 
+        $orders = new CustomerOrder();
         $this->render('admin/dashboard', [
             'title' => 'Quản trị',
             'userCount' => (new User())->countAll(),
             'carCount' => (new Car())->countAll(),
+            'salesStats' => $orders->statistics(),
+            'monthlyStats' => $orders->monthlyStatistics(),
             'admin' => $_SESSION['user'],
         ]);
     }
