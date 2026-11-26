@@ -11,6 +11,7 @@ $statusLabels = [
     'deposit_paid' => 'Đã đặt cọc',
     'purchased' => 'Đã mua xe',
     'cancelled' => 'Đã hủy',
+    'refunded' => 'Đã hoàn cọc',
 ];
 $typeLabels = ['purchase' => 'Đơn mua lịch sử', 'deposit' => 'Đặt cọc'];
 ob_start();
@@ -39,6 +40,7 @@ ob_start();
                         <div><span>Thời gian nhận xe</span><strong><?= !empty($order['delivery_at']) ? e(date('d/m/Y H:i', strtotime($order['delivery_at']))) : 'Showroom sẽ cập nhật sau' ?></strong></div>
                     </div>
                     <?php if ((int) $order['discount_total'] > 0): ?><p class="order-message">Đã áp dụng ưu đãi: <?= money($order['discount_total']) ?></p><?php endif; ?>
+                    <?php if (!empty($order['refund_amount'])): ?><p class="order-message">Đã hoàn cọc: <?= money($order['refund_amount']) ?></p><?php endif; ?>
                     <?php if (!empty($order['message'])): ?><p class="order-message"><?= e($order['message']) ?></p><?php endif; ?>
                     <a class="button button-outline order-detail-link" href="<?= e(url('/tai-khoan/don-hang/' . (int) $order['id'])) ?>">Xem chi tiết đơn ↗</a>
                 </article>
