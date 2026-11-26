@@ -5,11 +5,13 @@ namespace App\Controllers;
 
 use App\Core\Controller;
 use App\Core\Csrf;
+use App\Exceptions\VoucherException;
 use App\Models\Car;
 use App\Models\CatalogOption;
-use App\Models\CustomerOrder;
 use App\Models\CustomerInquiry;
 use App\Models\SiteSetting;
+use App\Services\CheckoutService;
+use App\Services\VoucherService;
 use Throwable;
 
 final class CarController extends Controller
@@ -116,17 +118,23 @@ final class CarController extends Controller
         $unitPrice = (int) ($car['discount_price'] ?: $car['price']) + $selection['delta'];
         $quantity = 1;
         $voucherCode = strtoupper(trim((string) ($_POST['voucher_code'] ?? '')));
+        $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
+            ? (int) $_SESSION['user']['id']
+            : null;
         $discount = 0;
         if ($voucherCode !== '') {
-            $voucher = $cars->voucher($voucherCode);
-            $subtotal = $unitPrice * $quantity;
-            if (!$voucher || $subtotal < (int) $voucher['minimum_order']) {
-                $_SESSION['_flash'] = 'Mã giảm giá không hợp lệ hoặc đơn hàng chưa đạt giá trị tối thiểu.';
+            $quote = (new VoucherService())->quote(
+                $voucherCode,
+                $unitPrice * $quantity,
+                $userId,
+                (string) $car['brand'],
+                (string) $car['slug']
+            );
+            if (!$quote['valid']) {
+                $_SESSION['_flash'] = $quote['message'];
                 $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
             }
-            $discount = $voucher['discount_type'] === 'percent'
-                ? min($subtotal, (int) round($subtotal * (float) $voucher['discount_value'] / 100))
-                : min($subtotal, (int) $voucher['discount_value']);
+            $discount = $quote['discount'];
         }
 
         $types = [
@@ -153,9 +161,6 @@ final class CarController extends Controller
             . '; giá dự kiến: ' . number_format(($unitPrice * $quantity) - $discount, 0, ',', '.') . ' VND.'
             . ($voucherCode !== '' ? '; voucher: ' . $voucherCode : '')
             . ($message !== '' ? ' ' . $message : '');
-        $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
-            ? (int) $_SESSION['user']['id']
-            : null;
         if ($action === 'deposit') {
             $paymentMethod = (string) ($_POST['payment_method'] ?? '');
             if (!in_array($paymentMethod, ['bank', 'cash'], true)) {
@@ -174,7 +179,7 @@ final class CarController extends Controller
                     ->modify('+' . $paymentDetails['lead_time_days'] . ' days')
                     ->format('Y-m-d');
             }
-            $orderId = (new CustomerOrder())->create([
+            $orderData = [
                 'user_id' => $userId,
                 'order_type' => 'deposit',
                 'status' => 'deposit_pending',
@@ -188,14 +193,28 @@ final class CarController extends Controller
                 'deposit_amount' => max(1, (int) round((($unitPrice * $quantity) - $discount) * 0.1)),
                 'delivery_at' => null,
                 'payment_info' => $paymentDetails,
-            ], [[
+            ];
+            $orderItems = [[
                 'car_id' => (int) $car['id'],
                 'name' => (string) $car['name'],
                 'image_url' => (string) $car['image_url'],
                 'quantity' => $quantity,
                 'unit_price' => $unitPrice,
                 'options' => $selection['labels'],
-            ]]);
+            ]];
+            try {
+                $orderId = (new CheckoutService())->createDeposit(
+                    $orderData,
+                    $orderItems,
+                    $voucherCode,
+                    $userId,
+                    (string) $car['brand'],
+                    (string) $car['slug']
+                );
+            } catch (VoucherException $error) {
+                $_SESSION['_flash'] = 'Mã giảm giá không còn hợp lệ: ' . $error->getMessage();
+                $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
+            }
             $_SESSION['_success'] = match ($paymentDetails['inventory_status']) {
                 'in_stock' => 'Đã tạo yêu cầu đặt cọc #' . $orderId . '. Tiền cọc bằng 10% giá xe.',
                 'preorder' => 'Đã tạo yêu cầu đặt cọc trước #' . $orderId . '. Showroom sẽ xác nhận thời gian nhận xe dự kiến.',
@@ -324,29 +343,33 @@ final class CarController extends Controller
         header('Content-Type: application/json; charset=utf-8');
         if (!Csrf::valid($_POST['_csrf'] ?? null)) {
             http_response_code(419);
-            echo json_encode(['valid' => false, 'message' => 'Phiên làm việc đã hết hạn.']);
+            echo json_encode(['valid' => false, 'message' => 'Phiên làm việc đã hết hạn.'], JSON_UNESCAPED_UNICODE);
             return;
         }
         $code = trim((string) ($_POST['code'] ?? ''));
         $price = filter_var($_POST['price'] ?? null, FILTER_VALIDATE_INT);
+        $slug = trim((string) ($_POST['car_slug'] ?? ''));
         if ($code === '' || $price === false || $price < 0) {
             http_response_code(400);
-            echo json_encode(['valid' => false, 'message' => 'Vui lòng nhập mã và chọn phiên bản trước.']);
+            echo json_encode(['valid' => false, 'message' => 'Vui lòng nhập mã và chọn phiên bản trước.'], JSON_UNESCAPED_UNICODE);
             return;
         }
-        $voucher = (new Car())->voucher($code);
-        if (!$voucher || $price < (int) $voucher['minimum_order']) {
-            echo json_encode(['valid' => false, 'message' => 'Mã không hợp lệ hoặc đơn hàng chưa đạt giá trị tối thiểu.']);
-            return;
-        }
-        $discount = $voucher['discount_type'] === 'percent'
-            ? min($price, (int) round($price * (float) $voucher['discount_value'] / 100))
-            : min($price, (int) $voucher['discount_value']);
+        $car = $slug !== '' ? (new Car())->findBySlug($slug) : null;
+        $userId = isset($_SESSION['user']['id']) && ($_SESSION['user']['role'] ?? '') === 'customer'
+            ? (int) $_SESSION['user']['id']
+            : null;
+        $result = (new VoucherService())->quote(
+            $code,
+            $price,
+            $userId,
+            $car ? (string) $car['brand'] : null,
+            $car ? (string) $car['slug'] : null
+        );
         echo json_encode([
-            'valid' => true,
-            'code' => $voucher['code'],
-            'discount' => $discount,
-            'message' => 'Áp dụng thành công: giảm ' . number_format($discount, 0, ',', '.') . ' ₫.',
+            'valid' => $result['valid'],
+            'code' => $result['code'],
+            'discount' => $result['discount'],
+            'message' => $result['message'],
         ], JSON_UNESCAPED_UNICODE);
     }
 

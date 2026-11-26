@@ -264,6 +264,7 @@ ob_start();
                 <form id="car-order-form" class="car-order-form" method="post"
                       action="<?= e(url('/xe/' . $car['slug'] . '/yeu-cau')) ?>">
                     <input type="hidden" name="_csrf" value="<?= e($csrf) ?>">
+                    <input type="hidden" name="car_slug" value="<?= e($car['slug']) ?>">
                     <div class="variant-grid">
                         <label>Phiên bản
                             <select name="variant" id="car-variant">

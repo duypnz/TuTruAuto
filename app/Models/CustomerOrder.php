@@ -15,9 +15,11 @@ final class CustomerOrder
         $this->db = Database::getInstance()->getConnection();
     }
 
-    public function create(array $order, array $items): int
+    public function create(array $order, array $items, bool $manageTransaction = true): int
     {
-        $this->db->beginTransaction();
+        if ($manageTransaction) {
+            $this->db->beginTransaction();
+        }
         try {
             $stmt = $this->db->prepare(
                 'INSERT INTO customer_orders
@@ -63,11 +65,13 @@ final class CustomerOrder
                     'options_json' => json_encode($item['options'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                 ]);
             }
-            $this->db->commit();
+            if ($manageTransaction) {
+                $this->db->commit();
+            }
 
             return $orderId;
         } catch (\Throwable $error) {
-            if ($this->db->inTransaction()) {
+            if ($manageTransaction && $this->db->inTransaction()) {
                 $this->db->rollBack();
             }
             throw $error;

@@ -11,6 +11,7 @@ use App\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Controllers\Admin\InquiryController as AdminInquiryController;
 use App\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Controllers\Admin\UserController as AdminUserController;
+use App\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Controllers\OrderController;
 
 require __DIR__ . '/app/Core/Autoloader.php';
@@ -45,6 +46,11 @@ $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite
 $router->get('/admin/xe', [AdminCarController::class, 'index']);
 $router->get('/admin/don-hang', [OrderController::class, 'adminOrders']);
 $router->post('/admin/don-hang/{id}/cap-nhat', [OrderController::class, 'updateOrder']);
+$router->get('/admin/voucher', [AdminVoucherController::class, 'index']);
+$router->post('/admin/voucher', [AdminVoucherController::class, 'create']);
+$router->get('/admin/voucher/{id}/sua', [AdminVoucherController::class, 'editForm']);
+$router->post('/admin/voucher/{id}/cap-nhat', [AdminVoucherController::class, 'update']);
+$router->post('/admin/voucher/{id}/xoa', [AdminVoucherController::class, 'delete']);
 $router->get('/admin/danh-muc', [AdminCatalogController::class, 'index']);
 $router->post('/admin/danh-muc', [AdminCatalogController::class, 'create']);
 $router->get('/admin/tai-khoan', [AdminUserController::class, 'index']);
