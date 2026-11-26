@@ -1636,3 +1636,22 @@ a {
         background: transparent;
     }
 }
+.car-3d-open { margin-top: 18px; }
+.car-3d-viewer {
+    margin-top: 18px;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: radial-gradient(ellipse at 50% 40%, #fff 0%, #f1f4f0 75%);
+}
+.car-3d-viewer[hidden] { display: none; }
+.car-3d-heading { display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 0; }
+.car-3d-heading h2 { margin: 7px 0 2px; font: 700 18px 'Manrope', sans-serif; }
+.car-3d-heading p { margin: 0; color: var(--muted); font-size: 11px; }
+.car-3d-heading>span { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 50%; color: var(--green); font-size: 10px; font-weight: 700; }
+.car-3d-modes { display: flex; gap: 7px; padding: 15px 18px 0; }
+.car-3d-modes button { min-height: 36px; padding: 0 16px; border: 1px solid #d7e0d8; border-radius: 30px; background: rgba(255,255,255,.8); color: var(--muted); font: 600 11px 'DM Sans', sans-serif; cursor: pointer; }
+.car-3d-modes button.is-active { border-color: var(--green); background: var(--green); color: #fff; }
+.car-3d-viewer model-viewer { display: block; width: 100%; height: clamp(300px, 36vw, 450px); --poster-color: transparent; }
+.model-credit { margin: 0; padding: 0 18px 14px; color: var(--muted); font-size: 10px; }
+.model-credit a { color: var(--green); }

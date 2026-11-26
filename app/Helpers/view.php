@@ -10,6 +10,14 @@ function money(mixed $value): string
     return number_format((int) $value, 0, ',', '.') . ' ₫';
 }
 
+function car_price_label(array $car): string
+{
+    $details = json_decode((string) ($car['details_json'] ?? ''), true);
+    return is_array($details) && !empty($details['price_on_request'])
+        ? 'Liên hệ báo giá'
+        : money($car['price'] ?? 0);
+}
+
 function url(string $path = '/'): string
 {
     $base = rtrim(
