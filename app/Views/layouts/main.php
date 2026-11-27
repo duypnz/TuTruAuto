@@ -19,6 +19,7 @@ $adminNavigation = [
     ['path' => '/admin/don-hang', 'prefix' => true, 'label' => 'Đơn đặt cọc', 'icon' => '▤'],
     ['path' => '/admin/voucher', 'prefix' => true, 'label' => 'Mã giảm giá', 'icon' => '％'],
     ['path' => '/admin/lien-he', 'prefix' => true, 'label' => 'Liên hệ khách hàng', 'icon' => '✉'],
+    ['path' => '/admin/chat', 'prefix' => true, 'label' => 'Chat hỗ trợ', 'icon' => '◌'],
     ['path' => '/admin/tai-khoan', 'prefix' => true, 'label' => 'Tài khoản', 'icon' => '♙'],
     ['path' => '/admin/thanh-toan', 'prefix' => true, 'label' => 'Thanh toán', 'icon' => '₫'],
 ];
@@ -257,6 +258,37 @@ $adminNavigation = [
             </div>
         </div>
     </footer>
+
+    <?php if (isCustomerLoggedIn()): ?>
+        <section class="support-chat" data-support-chat
+            data-messages-url="<?= e(url('/tai-khoan/chat/tin-nhan')) ?>"
+            data-send-url="<?= e(url('/tai-khoan/chat/tin-nhan')) ?>"
+            data-unread-url="<?= e(url('/tai-khoan/chat/chua-doc')) ?>"
+            data-csrf="<?= e(\App\Core\Csrf::token()) ?>"
+            aria-labelledby="support-chat-title" hidden>
+            <header class="support-chat-header" data-chat-drag-handle>
+                <div><strong id="support-chat-title">Hỗ trợ khách hàng</strong><small>Nhắn tin trực tiếp với nhân viên</small></div>
+                <div class="support-chat-header-actions">
+                    <button type="button" class="support-chat-minimize" data-support-chat-minimize aria-label="Thu nhỏ khung chat">−</button>
+                    <button type="button" class="support-chat-close" data-support-chat-close aria-label="Đóng cửa sổ chat">×</button>
+                </div>
+            </header>
+            <div class="support-chat-messages" data-chat-messages aria-live="polite">
+                <p class="support-chat-state">Đang tải tin nhắn...</p>
+            </div>
+            <p class="support-chat-error" data-chat-error role="status" hidden></p>
+            <form class="support-chat-form" data-chat-form>
+                <label class="sr-only" for="support-chat-input">Tin nhắn</label>
+                <textarea id="support-chat-input" name="message" rows="2" maxlength="2000" placeholder="Nhập tin nhắn..." required></textarea>
+                <button type="submit" aria-label="Gửi tin nhắn">Gửi</button>
+            </form>
+        </section>
+        <button type="button" class="support-chat-bubble" data-support-chat-bubble
+            aria-label="Mở chat hỗ trợ" aria-expanded="false">
+            <span aria-hidden="true">✉</span>
+            <span class="support-chat-bubble-count" data-support-chat-unread aria-live="polite" hidden>0</span>
+        </button>
+    <?php endif; ?>
 
     <script
         src="<?= e(url('/public/assets/js/app.js')) ?>?v=<?= e((string) filemtime(dirname(__DIR__, 3) . '/public/assets/js/app.js')) ?>"
