@@ -294,6 +294,16 @@ final class Car
 
     public function update(int $id, array $data): void
     {
+        $carCode = trim((string) ($data['car_code'] ?? ''));
+        if ($carCode === '') {
+            $currentCode = $this->db->prepare('SELECT car_code FROM cars WHERE id = :id');
+            $currentCode->execute(['id' => $id]);
+            $carCode = trim((string) ($currentCode->fetchColumn() ?: ''));
+            if ($carCode === '') {
+                $carCode = 'TTA-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+            }
+        }
+
         $stmt = $this->db->prepare(
             'UPDATE cars SET
                 name = :name,
@@ -339,7 +349,7 @@ final class Car
             'status' => $data['status'],
             'condition_type' => $data['condition_type'],
             'discount_price' => $data['discount_price'],
-            'car_code' => $data['car_code'],
+            'car_code' => $carCode,
             'gallery_json' => $data['gallery_json'],
             'video_url' => $data['video_url'],
             'details_json' => $data['details_json'],
