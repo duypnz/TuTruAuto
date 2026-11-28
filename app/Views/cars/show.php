@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-$title = $car['name'];
 $details = is_array($car['details']) ? $car['details'] : [];
 $specs = is_array($details['specs'] ?? null) ? $details['specs'] : [];
 $variants = is_array($details['variants'] ?? null) ? $details['variants'] : [];
@@ -75,6 +74,16 @@ if ($comfortDetails !== []) {
     ];
 }
 $conditionLabel = ($car['condition_type'] ?? 'new') === 'used' ? 'Xe đã qua sử dụng' : 'Xe mới';
+$modelType = strtolower((string) ($car['body_type'] ?? ''));
+$modelName = match (true) {
+    str_contains($modelType, 'suv'), str_contains($modelType, 'crossover') => 'luxury-suv',
+    str_contains($modelType, 'coupe'), str_contains($modelType, 'sport') => 'grand-tourer',
+    str_contains($modelType, 'hatch') => 'hot-hatchback',
+    str_contains($modelType, 'pickup'), str_contains($modelType, 'truck') => 'boxy-off-roader',
+    str_contains($modelType, 'electric') => 'electric-fastback',
+    default => 'executive-sedan',
+};
+$modelPath = '/public/assets/models/realistic/' . $modelName . '.glb';
 $specRows = [
     'model_line' => 'Dòng xe',
     'category' => 'Danh mục',
@@ -139,6 +148,25 @@ ob_start();
                     <img id="car-main-image" src="<?= e(image_src($car['gallery'][0])) ?>" alt="<?= e($car['name']) ?>">
                     <span class="image-badge"><?= e($car['badge'] ?: $stockLabel) ?></span>
                 </div>
+
+                <button class="button button-outline car-3d-open" type="button" data-open-car-3d aria-expanded="false">
+                    Xem mô hình 3D 360°
+                </button>
+                <section class="car-3d-viewer" data-car-3d-panel hidden aria-label="Mô hình xe 3D">
+                    <div class="car-3d-heading">
+                        <div><span class="eyebrow">KHÁM PHÁ XE</span><h2><?= e($car['name']) ?></h2>
+                            <p>Mẫu 3D minh họa theo kiểu dáng xe; kéo để xoay, cuộn để phóng to.</p></div>
+                        <span>360°</span>
+                    </div>
+                    <div class="car-3d-modes" role="group" aria-label="Góc xem mô hình">
+                        <button class="is-active" type="button" data-car-model-mode data-model-view="exterior" data-model-src="<?= e(url($modelPath)) ?>" aria-pressed="true">Ngoại thất</button>
+                        <button type="button" data-car-model-mode data-model-view="interior" data-model-src="<?= e(url($modelPath)) ?>" aria-pressed="false">Nội thất</button>
+                    </div>
+                    <model-viewer id="car-3d-model" src="<?= e(url($modelPath)) ?>" camera-controls auto-rotate
+                        camera-orbit="35deg 68deg 120%" shadow-intensity="1" exposure="1"
+                        aria-label="Mô hình 3D xoay 360 độ của <?= e($car['name']) ?>"></model-viewer>
+                    <p class="model-credit">Mô hình minh họa: vinish.dev, giấy phép CC BY 4.0.</p>
+                </section>
 
                 <section class="installment-calculator" id="tra-gop" data-installment-calculator>
                     <div><span class="eyebrow"><span></span> ƯỚC TÍNH THAM KHẢO</span><h2>Tính khoản trả góp</h2><p>Chưa gồm phí, bảo hiểm và điều kiện duyệt vay của ngân hàng.</p></div>

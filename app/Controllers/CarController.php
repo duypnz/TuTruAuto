@@ -19,18 +19,35 @@ final class CarController extends Controller
     public function index(): void
     {
         $catalog = new CatalogOption();
-        $cars = (new Car())->search([
+        $carModel = new Car();
+        $filters = [
             'keyword' => trim((string) ($_GET['q'] ?? '')),
             'brand' => trim((string) ($_GET['brand'] ?? '')),
             'body_type' => trim((string) ($_GET['body_type'] ?? '')),
             'fuel' => trim((string) ($_GET['fuel'] ?? '')),
             'sort' => (string) ($_GET['sort'] ?? ''),
-        ]);
+        ];
+        $totalCars = $carModel->countSearch($filters);
+        $perPage = 9;
+        $totalPages = max(1, (int) ceil($totalCars / $perPage));
+        $requestedPage = filter_var(
+            is_scalar($_GET['page'] ?? null) ? (string) $_GET['page'] : null,
+            FILTER_VALIDATE_INT
+        );
+        $currentPage = min(
+            $requestedPage === false ? 1 : max(1, $requestedPage),
+            $totalPages
+        );
+        $cars = $carModel->search($filters, $perPage, ($currentPage - 1) * $perPage);
 
         $this->render('cars/index', [
             'cars' => $cars,
             'brands' => $catalog->values('brand'),
             'bodyTypes' => $catalog->values('body_type'),
+            'filters' => $filters,
+            'totalCars' => $totalCars,
+            'currentPage' => $currentPage,
+            'totalPages' => $totalPages,
         ]);
     }
 
