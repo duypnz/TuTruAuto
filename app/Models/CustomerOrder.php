@@ -24,10 +24,10 @@ final class CustomerOrder
             $stmt = $this->db->prepare(
                 'INSERT INTO customer_orders
                     (user_id, order_type, status, customer_name, phone, message,
-                         voucher_code, subtotal, discount_total, total, deposit_amount, delivery_at, payment_info_json)
+                         email, voucher_code, subtotal, discount_total, total, deposit_amount, delivery_at, payment_info_json)
                  VALUES
                     (:user_id, :order_type, :status, :customer_name, :phone, :message,
-                         :voucher_code, :subtotal, :discount_total, :total, :deposit_amount, :delivery_at, :payment_info_json)'
+                         :email, :voucher_code, :subtotal, :discount_total, :total, :deposit_amount, :delivery_at, :payment_info_json)'
             );
             $stmt->execute([
                 'user_id' => $order['user_id'] ?? null,
@@ -36,6 +36,9 @@ final class CustomerOrder
                 'customer_name' => $order['customer_name'],
                 'phone' => $order['phone'],
                 'message' => $order['message'] !== '' ? $order['message'] : null,
+                'email' => isset($order['email']) && trim((string) $order['email']) !== ''
+                    ? strtolower(trim((string) $order['email']))
+                    : null,
                 'voucher_code' => $order['voucher_code'] !== '' ? $order['voucher_code'] : null,
                 'subtotal' => $order['subtotal'],
                 'discount_total' => $order['discount_total'],
@@ -86,12 +89,17 @@ final class CustomerOrder
         );
     }
 
-    public function findForCustomerById(int $userId, int $orderId): ?array
+    public function findForCustomerById(?int $userId, int $orderId): ?array
     {
-        $orders = $this->findOrders(
-            "WHERE o.user_id = :user_id AND o.order_type = 'deposit' AND o.id = :order_id",
-            ['user_id' => $userId, 'order_id' => $orderId]
-        );
+        $orders = $userId !== null && $userId > 0
+            ? $this->findOrders(
+                "WHERE o.user_id = :user_id AND o.order_type = 'deposit' AND o.id = :order_id",
+                ['user_id' => $userId, 'order_id' => $orderId]
+            )
+            : $this->findOrders(
+                "WHERE o.order_type = 'deposit' AND o.id = :order_id",
+                ['order_id' => $orderId]
+            );
 
         return $orders[0] ?? null;
     }
@@ -216,7 +224,13 @@ final class CustomerOrder
 
     public function findRawById(int $orderId): ?array
     {
-        $stmt = $this->db->prepare('SELECT * FROM customer_orders WHERE id = :id LIMIT 1');
+        $stmt = $this->db->prepare(
+            'SELECT o.*, COALESCE(NULLIF(o.email, \'\'), u.email) AS email
+             FROM customer_orders o
+             LEFT JOIN users u ON u.id = o.user_id
+             WHERE o.id = :id
+             LIMIT 1'
+        );
         $stmt->execute(['id' => $orderId]);
 
         return $stmt->fetch() ?: null;
@@ -251,7 +265,7 @@ final class CustomerOrder
 
     private function findOrders(string $where, array $params): array
     {
-        $sql = 'SELECT o.*, u.email,
+        $sql = 'SELECT o.*, COALESCE(NULLIF(o.email, \'\'), u.email) AS email,
                        i.id AS item_id, i.car_id, i.car_name, i.car_image,
                        i.quantity, i.unit_price, i.options_json
                 FROM customer_orders o
