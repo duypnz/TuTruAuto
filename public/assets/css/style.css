@@ -3286,7 +3286,6 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
         min-height: 0;
     }
 }
-
 .status-refunded { background: #e8eefb; color: #31549a; }
 .order-history { margin: 14px 0; padding: 12px; border: 1px solid #dfe5df; border-radius: 4px; background: #fbfcfb; }
 .order-history>strong { display: block; margin-bottom: 8px; font-size: 11px; }
