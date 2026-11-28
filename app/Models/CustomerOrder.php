@@ -124,7 +124,7 @@ final class CustomerOrder
             $params['order_search'] = '%' . ($orderNumber !== '' ? $orderNumber : $keyword) . '%';
             $params['car_search'] = $search;
         }
-        $statuses = ['pending', 'deposit_pending', 'deposit_paid', 'purchased', 'cancelled'];
+        $statuses = ['pending', 'deposit_pending', 'deposit_paid', 'purchased', 'cancelled', 'refunded'];
         if (in_array($filters['status'] ?? '', $statuses, true)) {
             $where[] = 'o.status = :status';
             $params['status'] = $filters['status'];
@@ -151,7 +151,7 @@ final class CustomerOrder
         $startMonth = $firstMonth->modify('-' . ($months - 1) . ' months');
         $stmt = $this->db->prepare(
             "SELECT DATE_FORMAT(created_at, '%Y-%m') AS month_key,
-                    SUM(CASE WHEN status <> 'cancelled' THEN 1 ELSE 0 END) AS order_count,
+                    SUM(CASE WHEN status NOT IN ('cancelled', 'refunded') THEN 1 ELSE 0 END) AS order_count,
                     COALESCE(SUM(CASE WHEN status = 'purchased' THEN total ELSE 0 END), 0) AS revenue
              FROM customer_orders
              WHERE created_at >= :start_at
@@ -192,7 +192,8 @@ final class CustomerOrder
                  WHERE status = :revenue_status) AS revenue,
                 (SELECT COUNT(*)
                  FROM customer_orders
-                 WHERE status <> :cancelled_status) AS order_count,
+                  WHERE status NOT IN (:cancelled_status, :refunded_status)) AS order_count,
+
                 (SELECT COALESCE(SUM(i.quantity), 0)
                  FROM customer_order_items i
                  INNER JOIN customer_orders o ON o.id = i.order_id
@@ -201,6 +202,7 @@ final class CustomerOrder
         $stmt->execute([
             'revenue_status' => 'purchased',
             'cancelled_status' => 'cancelled',
+            'refunded_status' => 'refunded',
             'sold_status' => 'purchased',
         ]);
         $statistics = $stmt->fetch() ?: [];
@@ -212,36 +214,37 @@ final class CustomerOrder
         ];
     }
 
-    public function updateStatus(int $orderId, string $status): bool
+    public function findRawById(int $orderId): ?array
     {
-        $stmt = $this->db->prepare(
-            'UPDATE customer_orders SET status = :status WHERE id = :id'
-        );
-        $stmt->execute(['id' => $orderId, 'status' => $status]);
+        $stmt = $this->db->prepare('SELECT * FROM customer_orders WHERE id = :id LIMIT 1');
+        $stmt->execute(['id' => $orderId]);
 
-        return $stmt->rowCount() > 0;
+        return $stmt->fetch() ?: null;
     }
 
-    public function updateManagementDetails(
-        int $orderId,
-        string $status,
-        ?string $deliveryAt
-    ): bool {
-        $exists = $this->db->prepare('SELECT 1 FROM customer_orders WHERE id = :id LIMIT 1');
-        $exists->execute(['id' => $orderId]);
-        if (!$exists->fetchColumn()) {
-            return false;
+    public function applyManagementChanges(int $orderId, array $changes): bool
+    {
+        $allowed = [
+            'status', 'delivery_at', 'payment_reference', 'payment_note',
+            'payment_verified_at', 'payment_verified_by', 'cancelled_at', 'cancel_reason',
+            'refund_amount', 'refund_method', 'refund_note', 'refunded_at', 'refunded_by',
+        ];
+        $sets = [];
+        $params = ['id' => $orderId];
+        foreach ($allowed as $field) {
+            if (array_key_exists($field, $changes)) {
+                $sets[] = $field . ' = :' . $field;
+                $params[$field] = $changes[$field];
+            }
         }
+        if ($sets === []) {
+            return $this->findRawById($orderId) !== null;
+        }
+
         $stmt = $this->db->prepare(
-            'UPDATE customer_orders
-             SET status = :status, delivery_at = :delivery_at
-             WHERE id = :id'
+            'UPDATE customer_orders SET ' . implode(', ', $sets) . ' WHERE id = :id'
         );
-        $stmt->execute([
-            'id' => $orderId,
-            'status' => $status,
-            'delivery_at' => $deliveryAt,
-        ]);
+        $stmt->execute($params);
 
         return true;
     }
@@ -278,6 +281,17 @@ final class CustomerOrder
                     'deposit_amount' => $row['deposit_amount'],
                     'delivery_at' => $row['delivery_at'],
                     'payment_info' => $this->decodePaymentInfo($row['payment_info_json'] ?? null),
+                    'payment_reference' => $row['payment_reference'] ?? null,
+                    'payment_note' => $row['payment_note'] ?? null,
+                    'payment_verified_at' => $row['payment_verified_at'] ?? null,
+                    'payment_verified_by' => $row['payment_verified_by'] ?? null,
+                    'cancelled_at' => $row['cancelled_at'] ?? null,
+                    'cancel_reason' => $row['cancel_reason'] ?? null,
+                    'refund_amount' => $row['refund_amount'] ?? null,
+                    'refund_method' => $row['refund_method'] ?? null,
+                    'refund_note' => $row['refund_note'] ?? null,
+                    'refunded_at' => $row['refunded_at'] ?? null,
+                    'refunded_by' => $row['refunded_by'] ?? null,
                     'created_at' => $row['created_at'],
                     'items' => [],
                 ];

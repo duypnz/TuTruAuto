@@ -139,7 +139,7 @@ CREATE TABLE IF NOT EXISTS customer_orders (
     id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT UNSIGNED NULL,
     order_type ENUM('purchase', 'deposit') NOT NULL,
-    status ENUM('pending', 'deposit_pending', 'deposit_paid', 'purchased', 'cancelled') NOT NULL DEFAULT 'pending',
+    status ENUM('pending', 'deposit_pending', 'deposit_paid', 'purchased', 'cancelled', 'refunded') NOT NULL DEFAULT 'pending',
     customer_name VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
     message TEXT NULL,
@@ -150,11 +150,25 @@ CREATE TABLE IF NOT EXISTS customer_orders (
     deposit_amount DECIMAL(15,0) NULL,
     delivery_at DATETIME NULL,
     payment_info_json TEXT NULL,
+    payment_reference VARCHAR(120) NULL,
+    payment_note TEXT NULL,
+    payment_verified_at DATETIME NULL,
+    payment_verified_by BIGINT UNSIGNED NULL,
+    cancelled_at DATETIME NULL,
+    cancel_reason VARCHAR(500) NULL,
+    refund_amount DECIMAL(15,0) NULL,
+    refund_method ENUM('bank', 'cash') NULL,
+    refund_note VARCHAR(500) NULL,
+    refunded_at DATETIME NULL,
+    refunded_by BIGINT UNSIGNED NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_customer_orders_user (user_id, created_at),
     INDEX idx_customer_orders_status (status, created_at),
-    CONSTRAINT fk_customer_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    INDEX idx_customer_orders_payment_status (payment_verified_at, status),
+    CONSTRAINT fk_customer_orders_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_customer_orders_verified_by FOREIGN KEY (payment_verified_by) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_customer_orders_refunded_by FOREIGN KEY (refunded_by) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS customer_order_items (
@@ -168,6 +182,22 @@ CREATE TABLE IF NOT EXISTS customer_order_items (
     options_json LONGTEXT NOT NULL,
     CONSTRAINT fk_customer_order_items_order FOREIGN KEY (order_id) REFERENCES customer_orders(id) ON DELETE CASCADE,
     CONSTRAINT fk_customer_order_items_car FOREIGN KEY (car_id) REFERENCES cars(id) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS customer_order_status_history (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    order_id BIGINT UNSIGNED NOT NULL,
+    from_status VARCHAR(30) NULL,
+    to_status VARCHAR(30) NOT NULL,
+    action VARCHAR(30) NOT NULL,
+    note VARCHAR(500) NULL,
+    details_json TEXT NULL,
+    actor_id BIGINT UNSIGNED NULL,
+    actor_name VARCHAR(120) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_order_status_history_order (order_id, created_at),
+    CONSTRAINT fk_order_status_history_order FOREIGN KEY (order_id) REFERENCES customer_orders(id) ON DELETE CASCADE,
+    CONSTRAINT fk_order_status_history_actor FOREIGN KEY (actor_id) REFERENCES users(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS voucher_usages (

@@ -55,6 +55,9 @@ $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite
 $router->get('/admin/xe', [AdminCarController::class, 'index']);
 $router->get('/admin/don-hang', [OrderController::class, 'adminOrders']);
 $router->post('/admin/don-hang/{id}/cap-nhat', [OrderController::class, 'updateOrder']);
+$router->post('/admin/don-hang/{id}/doi-soat', [OrderController::class, 'verifyPayment']);
+$router->post('/admin/don-hang/{id}/huy', [OrderController::class, 'cancelOrder']);
+$router->post('/admin/don-hang/{id}/hoan-coc', [OrderController::class, 'refundDeposit']);
 $router->get('/admin/voucher', [AdminVoucherController::class, 'index']);
 $router->post('/admin/voucher', [AdminVoucherController::class, 'create']);
 $router->get('/admin/voucher/{id}/sua', [AdminVoucherController::class, 'editForm']);
