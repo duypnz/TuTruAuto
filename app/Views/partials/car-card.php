@@ -37,7 +37,7 @@
         </p>
 
         <div class="car-bottom">
-            <strong><?= money($car['price']) ?></strong>
+            <strong><?= e(car_price_label($car)) ?></strong>
 
             <div class="car-bottom-actions">
                 <?php if (isCustomerLoggedIn()): ?>

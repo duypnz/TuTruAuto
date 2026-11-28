@@ -40,9 +40,45 @@ final class Car
             ->fetchColumn();
     }
 
-    public function search(array $filters): array
+    public function search(array $filters, ?int $limit = null, int $offset = 0): array
     {
-        $sql = 'SELECT * FROM cars WHERE status = :status AND condition_type = :condition_type';
+        [$conditions, $params] = $this->searchConditions($filters);
+        $sql = 'SELECT * FROM cars WHERE ' . $conditions;
+
+        $sql .= match ($filters['sort'] ?? '') {
+            'price_asc' => ' ORDER BY price ASC, id ASC',
+            'price_desc' => ' ORDER BY price DESC, id DESC',
+            default => ' ORDER BY featured DESC, created_at DESC, id DESC',
+        };
+        if ($limit !== null) {
+            $sql .= ' LIMIT :limit OFFSET :offset';
+        }
+
+        $stmt = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $stmt->bindValue(':' . $key, $value);
+        }
+        if ($limit !== null) {
+            $stmt->bindValue(':limit', max(1, $limit), PDO::PARAM_INT);
+            $stmt->bindValue(':offset', max(0, $offset), PDO::PARAM_INT);
+        }
+        $stmt->execute();
+
+        return $stmt->fetchAll();
+    }
+
+    public function countSearch(array $filters): int
+    {
+        [$conditions, $params] = $this->searchConditions($filters);
+        $stmt = $this->db->prepare('SELECT COUNT(*) FROM cars WHERE ' . $conditions);
+        $stmt->execute($params);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    private function searchConditions(array $filters): array
+    {
+        $conditions = ['status = :status', 'condition_type = :condition_type'];
         $params = ['status' => 'available', 'condition_type' => 'new'];
 
         foreach (
@@ -53,27 +89,18 @@ final class Car
             ] as $key => $column
         ) {
             if (($filters[$key] ?? '') !== '') {
-                $sql .= " AND {$column} = :{$key}";
+                $conditions[] = "{$column} = :{$key}";
                 $params[$key] = $filters[$key];
             }
         }
 
         if (($filters['keyword'] ?? '') !== '') {
-            $sql .= ' AND (name LIKE :keyword_name OR brand LIKE :keyword_brand)';
+            $conditions[] = '(name LIKE :keyword_name OR brand LIKE :keyword_brand)';
             $params['keyword_name'] = '%' . $filters['keyword'] . '%';
             $params['keyword_brand'] = '%' . $filters['keyword'] . '%';
         }
 
-        $sql .= match ($filters['sort'] ?? '') {
-            'price_asc' => ' ORDER BY price ASC',
-            'price_desc' => ' ORDER BY price DESC',
-            default => ' ORDER BY featured DESC, created_at DESC',
-        };
-
-        $stmt = $this->db->prepare($sql);
-        $stmt->execute($params);
-
-        return $stmt->fetchAll();
+        return [implode(' AND ', $conditions), $params];
     }
 
     public function findByIds(array $ids): array
@@ -182,20 +209,6 @@ final class Car
             'rating' => $rating,
             'content' => $content,
         ]);
-    }
-
-    public function voucher(string $code): ?array
-    {
-        $stmt = $this->db->prepare(
-            'SELECT code, discount_type, discount_value, minimum_order
-             FROM car_vouchers
-             WHERE code = :code AND is_active = 1
-               AND starts_at <= CURRENT_TIMESTAMP AND ends_at >= CURRENT_TIMESTAMP
-             LIMIT 1'
-        );
-        $stmt->execute(['code' => strtoupper(trim($code))]);
-
-        return $stmt->fetch() ?: null;
     }
 
     /**
@@ -308,6 +321,16 @@ final class Car
 
     public function update(int $id, array $data): void
     {
+        $carCode = trim((string) ($data['car_code'] ?? ''));
+        if ($carCode === '') {
+            $currentCode = $this->db->prepare('SELECT car_code FROM cars WHERE id = :id');
+            $currentCode->execute(['id' => $id]);
+            $carCode = trim((string) ($currentCode->fetchColumn() ?: ''));
+            if ($carCode === '') {
+                $carCode = 'TTA-' . str_pad((string) $id, 6, '0', STR_PAD_LEFT);
+            }
+        }
+
         $stmt = $this->db->prepare(
             'UPDATE cars SET
                 name = :name,
@@ -353,7 +376,7 @@ final class Car
             'status' => $data['status'],
             'condition_type' => $data['condition_type'],
             'discount_price' => $data['discount_price'],
-            'car_code' => $data['car_code'],
+            'car_code' => $carCode,
             'gallery_json' => $data['gallery_json'],
             'video_url' => $data['video_url'],
             'details_json' => $data['details_json'],

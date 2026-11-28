@@ -15,6 +15,9 @@ INSERT IGNORE INTO cars (name,slug,brand,year,body_type,fuel,transmission,price,
 ('Ford Everest Titanium','ford-everest-titanium','Ford',2025,'SUV','Dầu','Tự động 10 cấp',1550000000,'https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=85','7 chỗ','SUV 7 chỗ vận hành mạnh mẽ, gầm cao và khả năng sử dụng linh hoạt cho gia đình hoặc địa hình hỗn hợp.',1,'available','new',JSON_ARRAY('https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=85','https://images.unsplash.com/photo-1519641471654-76ce0107ad1b?auto=format&fit=crop&w=1200&q=85','https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=85'),JSON_OBJECT('specs',JSON_OBJECT('engine','I4 Diesel tăng áp','displacement','2.993 cc','power','250 mã lực','torque','600 Nm','transmission','Tự động 10 cấp','fuel','Dầu','consumption','Khoảng 8-10 l/100 km','seats','7','doors','5','drive_type','Dẫn động 4 bánh'))),
 ('Hyundai Tucson 2.0','hyundai-tucson-2.0','Hyundai',2025,'SUV','Xăng','Tự động 6 cấp',820000000,'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=85','Cần cỡ hợp lý','SUV 5 chỗ thiết kế sắc sảo, sử dụng dễ dàng trong phố và trang bị tiện nghi cho chuyến đi dài.',0,'available','new',JSON_ARRAY('https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?auto=format&fit=crop&w=1200&q=85','https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1200&q=85','https://images.unsplash.com/photo-1550355291-bbee04a92027?auto=format&fit=crop&w=1200&q=85'),JSON_OBJECT('specs',JSON_OBJECT('engine','I4 xăng','displacement','1.998 cc','power','156 mã lực','torque','192 Nm','transmission','Tự động 6 cấp','fuel','Xăng','consumption','Khoảng 8-9 l/100 km','seats','5','doors','5','drive_type','Dẫn động cầu trước')));
 
-INSERT INTO car_vouchers (code,discount_type,discount_value,minimum_order,starts_at,ends_at,is_active)
-VALUES ('TUTRU5','percent',5,500000000,'2020-01-01 00:00:00','2035-12-31 23:59:59',1)
-ON DUPLICATE KEY UPDATE is_active = VALUES(is_active);
+INSERT INTO car_vouchers (code,name,discount_type,discount_value,max_discount,minimum_order,starts_at,ends_at,is_active,usage_limit,usage_per_user,used_count)
+VALUES ('TUTRU5','Giảm 5% cho đơn từ 500 triệu đồng','percent',5,100000000,500000000,'2020-01-01 00:00:00','2035-12-31 23:59:59',1,NULL,NULL,0)
+ON DUPLICATE KEY UPDATE
+    name = VALUES(name),
+    max_discount = VALUES(max_discount),
+    is_active = VALUES(is_active);
