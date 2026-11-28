@@ -6,9 +6,10 @@ Website giới thiệu và bán xe ô tô bằng PHP 8.1+, PDO, MySQL/MariaDB v�
 
 1. Bật Apache và MySQL trong XAMPP.
 2. Mở phpMyAdmin, nhập `database/schema.sql`, sau đó nhập `database/seed.sql`.
-3. Chạy các migration cần thiết trong `database/migrations/` trên cơ sở dữ liệu `tu_tru_auto`, gồm `002_car_details_and_sales.sql`, `003_customer_orders.sql`, `004_order_delivery_details.sql`, `005_admin_contacts_payment_catalog.sql`, `006_new_cars_and_gallery.sql`, `007_car_inventory.sql`, `008_expand_new_car_details.sql`, `009_add_apollo_and_lamborghini.sql`, `009_voucher_management.sql`, `010_order_refund_and_history.sql`, `010_model_specific_car_images.sql` và `011_support_chat.sql`.
-4. Sao chép `.env.example` thành `.env` và cập nhật thông tin MySQL nếu khác cấu hình mặc định.
-5. Mở `http://localhost/Tu-Tru-Auto/`.
+3. Chạy `composer install` trong thư mục dự án để cài thư viện gửi email.
+4. Chạy các migration cần thiết trong `database/migrations/` trên cơ sở dữ liệu `tu_tru_auto`, gồm `002_car_details_and_sales.sql`, `003_customer_orders.sql`, `004_order_delivery_details.sql`, `005_admin_contacts_payment_catalog.sql`, `006_new_cars_and_gallery.sql`, `007_car_inventory.sql`, `008_expand_new_car_details.sql`, `009_add_apollo_and_lamborghini.sql`, `009_voucher_management.sql`, `010_order_refund_and_history.sql`, `010_model_specific_car_images.sql` và `011_support_chat.sql`.
+5. Sao chép `.env.example` thành `.env` và cập nhật thông tin MySQL nếu khác cấu hình mặc định.
+6. Mở `http://localhost/Tu-Tru-Auto/`.
 
 ### Email thông báo đơn hàng
 

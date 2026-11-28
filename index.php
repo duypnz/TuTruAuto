@@ -18,7 +18,10 @@ use App\Controllers\Admin\VoucherController as AdminVoucherController;
 use App\Controllers\Admin\EmailTestController as AdminEmailTestController;
 use App\Controllers\OrderController;
 
-require __DIR__ . '/vendor/autoload.php';
+$composerAutoload = __DIR__ . '/vendor/autoload.php';
+if (is_file($composerAutoload)) {
+    require $composerAutoload;
+}
 require __DIR__ . '/app/Core/Autoloader.php';
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 if (session_status() !== PHP_SESSION_ACTIVE) {
