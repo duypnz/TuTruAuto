@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     syncHashActiveLink();
     window.addEventListener('hashchange', syncHashActiveLink);
-=======
     const carModelViewer = document.querySelector('#car-3d-model');
     const openCar3dButton = document.querySelector('[data-open-car-3d]');
     const car3dPanel = document.querySelector('[data-car-3d-panel]');
