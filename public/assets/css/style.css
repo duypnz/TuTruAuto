@@ -3301,6 +3301,8 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
     .order-history-item { grid-template-columns: 1fr; }
     .order-action-form label,
     .order-action-form .order-action-note { flex: 1 1 100%; }
+}
+
 .sr-only {
     position: absolute;
     width: 1px;
