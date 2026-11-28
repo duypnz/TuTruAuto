@@ -222,28 +222,6 @@ final class CustomerOrder
         return $stmt->fetch() ?: null;
     }
 
-<<<<<<< HEAD
-    public function updateManagementDetails(
-        int $orderId,
-        string $status,
-        ?string $deliveryAt
-    ): ?array {
-        $this->db->beginTransaction();
-        try {
-            $stmt = $this->db->prepare(
-                'SELECT o.status, o.customer_name, u.email
-                 FROM customer_orders o
-                 LEFT JOIN users u ON u.id = o.user_id
-                 WHERE o.id = :id
-                 FOR UPDATE'
-            );
-            $stmt->execute(['id' => $orderId]);
-            $current = $stmt->fetch();
-            if (!$current) {
-                $this->db->commit();
-                return null;
-            }
-=======
     public function applyManagementChanges(int $orderId, array $changes): bool
     {
         $allowed = [
@@ -267,42 +245,8 @@ final class CustomerOrder
             'UPDATE customer_orders SET ' . implode(', ', $sets) . ' WHERE id = :id'
         );
         $stmt->execute($params);
->>>>>>> 20594bd5d59376df6f81c1a97ec32066787a3343
 
-            $itemStmt = $this->db->prepare(
-                'SELECT car_name AS name FROM customer_order_items WHERE order_id = :order_id'
-            );
-            $itemStmt->execute(['order_id' => $orderId]);
-            $items = $itemStmt->fetchAll();
-
-            $updateStmt = $this->db->prepare(
-                'UPDATE customer_orders
-                 SET status = :status, delivery_at = :delivery_at
-                 WHERE id = :id'
-            );
-            $updateStmt->execute([
-                'id' => $orderId,
-                'status' => $status,
-                'delivery_at' => $deliveryAt,
-            ]);
-            $this->db->commit();
-
-            return [
-                'status_changed' => $current['status'] !== $status,
-                'order' => [
-                    'id' => $orderId,
-                    'status' => $status,
-                    'customer_name' => $current['customer_name'],
-                    'email' => $current['email'],
-                    'items' => $items,
-                ],
-            ];
-        } catch (\Throwable $error) {
-            if ($this->db->inTransaction()) {
-                $this->db->rollBack();
-            }
-            throw $error;
-        }
+        return $stmt->rowCount() > 0 || $this->findRawById($orderId) !== null;
     }
 
     private function findOrders(string $where, array $params): array

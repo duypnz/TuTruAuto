@@ -7,14 +7,9 @@ use App\Core\Controller;
 use App\Core\Csrf;
 use App\Exceptions\OrderException;
 use App\Models\CustomerOrder;
-<<<<<<< HEAD
-use App\Services\EmailService;
-=======
 use App\Models\OrderStatusHistory;
 use App\Services\OrderManagementService;
->>>>>>> 20594bd5d59376df6f81c1a97ec32066787a3343
 use DateTimeImmutable;
-use Throwable;
 
 final class OrderController extends Controller
 {
@@ -154,30 +149,6 @@ final class OrderController extends Controller
             return;
         }
 
-<<<<<<< HEAD
-        $update = (new CustomerOrder())->updateManagementDetails(
-            (int) ($params['id'] ?? 0),
-            $status,
-            $deliveryAt
-        );
-        if ($update === null) {
-            $_SESSION['_flash'] = 'Không tìm thấy đơn hàng cần cập nhật.';
-            $this->redirect('/admin/don-hang');
-        }
-
-        $_SESSION['_flash'] = 'Đã cập nhật trạng thái và lịch nhận xe.';
-        if ($update['status_changed']) {
-            try {
-                (new EmailService())->sendOrderStatusUpdate($update['order']);
-            } catch (Throwable $error) {
-                error_log(sprintf(
-                    'Order status email failed for order #%d: %s',
-                    (int) $params['id'],
-                    $error->getMessage()
-                ));
-                $_SESSION['_flash'] .= ' Trạng thái đã lưu nhưng email thông báo chưa gửi được.';
-            }
-=======
         try {
             (new OrderManagementService())->cancel(
                 (int) ($params['id'] ?? 0),
@@ -188,7 +159,6 @@ final class OrderController extends Controller
             $_SESSION['_flash'] = 'Đã hủy đơn. Nếu đã nhận cọc, hãy thực hiện hoàn cọc.';
         } catch (OrderException $error) {
             $_SESSION['_flash'] = $error->getMessage();
->>>>>>> 20594bd5d59376df6f81c1a97ec32066787a3343
         }
         $this->redirect('/admin/don-hang');
     }

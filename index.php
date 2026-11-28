@@ -60,7 +60,7 @@ $router->get('/admin/chat', [AdminSupportChatController::class, 'index']);
 $router->get('/admin/chat/cuoc-tro-chuyen', [AdminSupportChatController::class, 'conversations']);
 $router->get('/admin/chat/{id}', [AdminSupportChatController::class, 'messages']);
 $router->post('/admin/chat/{id}', [AdminSupportChatController::class, 'reply']);
->>>>>>> 20594bd5d59376df6f81c1a97ec32066787a3343
+
 $router->get('/yeu-thich', [CarController::class, 'favorites']);
 $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $router->get('/admin/xe', [AdminCarController::class, 'index']);
