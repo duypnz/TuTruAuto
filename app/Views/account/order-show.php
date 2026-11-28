@@ -4,6 +4,7 @@ require_once dirname(__DIR__, 2) . '/Helpers/view.php';
 
 $title = $title ?? 'Chi tiết đơn đặt cọc';
 $order = $order ?? [];
+$history = $history ?? [];
 $success = $success ?? null;
 $statusLabels = [
     'pending' => 'Chờ xác nhận',
@@ -11,6 +12,13 @@ $statusLabels = [
     'deposit_paid' => 'Đã đặt cọc',
     'purchased' => 'Đã hoàn tất',
     'cancelled' => 'Đã hủy',
+    'refunded' => 'Đã hoàn cọc',
+];
+$actionLabels = [
+    'status_update' => 'Cập nhật trạng thái',
+    'payment_verify' => 'Đối soát thanh toán',
+    'cancel' => 'Hủy đơn',
+    'refund' => 'Hoàn cọc',
 ];
 $payment = is_array($order['payment_info'] ?? null) ? $order['payment_info'] : [];
 $isPreorder = ($payment['inventory_status'] ?? '') === 'preorder';
@@ -30,6 +38,8 @@ ob_start();
         <header><div><strong>Trạng thái đơn</strong><span>Ngày tạo <?= e(date('d/m/Y H:i', strtotime($order['created_at']))) ?></span></div>
             <span class="order-status status-<?= e($order['status']) ?>"><?= e($statusLabels[$order['status']] ?? $order['status']) ?></span>
         </header>
+        <?php if (!empty($order['cancel_reason'])): ?><div class="auth-alert" role="status">Lý do hủy: <?= e($order['cancel_reason']) ?></div><?php endif; ?>
+        <?php if (!empty($order['refund_amount'])): ?><div class="profile-success" role="status">Showroom đã ghi nhận hoàn <?= money($order['refund_amount']) ?> tiền cọc<?= !empty($order['refunded_at']) ? ' vào ' . e(date('d/m/Y H:i', strtotime($order['refunded_at']))) : '' ?>.</div><?php endif; ?>
         <?php foreach ($order['items'] as $item): ?>
             <div class="order-car"><img src="<?= e(image_src($item['image_url'])) ?>" alt=""><div><strong><?= e($item['name']) ?></strong>
                 <?php if ($item['options']): ?><small><?= e(implode(' · ', $item['options'])) ?></small><?php endif; ?>
@@ -53,6 +63,9 @@ ob_start();
             <div><span>Giá xe sau ưu đãi</span><strong><?= money($order['total']) ?></strong></div>
             <div><span>Tiền đặt cọc (10%)</span><strong><?= $order['deposit_amount'] !== null ? money($order['deposit_amount']) : money((int) round((int) $order['total'] * 0.1)) ?></strong></div>
             <div><span>Thời gian nhận xe</span><strong><?= !empty($order['delivery_at']) ? e(date('d/m/Y H:i', strtotime($order['delivery_at']))) : 'Showroom sẽ xác nhận sau' ?></strong></div>
+            <div><span>Xác nhận tiền cọc</span><strong><?= !empty($order['payment_verified_at']) ? 'Đã nhận · ' . e(date('d/m/Y H:i', strtotime($order['payment_verified_at']))) : 'Chưa xác nhận' ?></strong></div>
+            <div><span>Tham chiếu giao dịch</span><strong><?= !empty($order['payment_reference']) ? e($order['payment_reference']) : '—' ?></strong></div>
+            <div><span>Ghi chú của showroom</span><strong><?= !empty($order['payment_note']) ? e($order['payment_note']) : '—' ?></strong></div>
         </div>
         <section class="payment-instructions">
             <h2>Phương thức thanh toán tiền cọc</h2>
@@ -88,6 +101,18 @@ ob_start();
             <?php endif; ?>
             <p class="payment-disclaimer">Đây là yêu cầu đặt cọc, không phải xác nhận thanh toán tự động. Mã QR trên trang này là minh họa giả lập.</p>
         </section>
+        <?php if ($history): ?>
+            <section class="order-history">
+                <strong>Lịch sử xử lý đơn hàng</strong>
+                <?php foreach ($history as $entry): ?>
+                    <div class="order-history-item">
+                        <span><?= e(date('d/m/Y H:i', strtotime($entry['created_at']))) ?></span>
+                        <span class="order-status status-<?= e($entry['to_status']) ?>"><?= e($statusLabels[$entry['to_status']] ?? $entry['to_status']) ?></span>
+                        <p><?= e($actionLabels[$entry['action']] ?? $entry['action']) ?><?= !empty($entry['note']) ? ' · ' . e($entry['note']) : '' ?></p>
+                    </div>
+                <?php endforeach; ?>
+            </section>
+        <?php endif; ?>
     </article>
 </div></section>
 <?php $content = ob_get_clean(); require dirname(__DIR__) . '/layouts/main.php'; ?>

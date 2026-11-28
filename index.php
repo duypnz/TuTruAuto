@@ -7,9 +7,11 @@ use App\Controllers\HomeController;
 use App\Controllers\CarController;
 use App\Controllers\AuthController;
 use App\Controllers\AdminController;
+use App\Controllers\SupportChatController;
 use App\Controllers\Admin\CarController as AdminCarController;
 use App\Controllers\Admin\CatalogController as AdminCatalogController;
 use App\Controllers\Admin\InquiryController as AdminInquiryController;
+use App\Controllers\Admin\SupportChatController as AdminSupportChatController;
 use App\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Controllers\Admin\UserController as AdminUserController;
 use App\Controllers\Admin\VoucherController as AdminVoucherController;
@@ -25,6 +27,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 $router = new Router();
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/ve-chung-toi', [HomeController::class, 'about']);
 $router->get('/xe', [CarController::class, 'index']);
 $router->get('/xe/{slug}', [CarController::class, 'show']);
 $router->get('/so-sanh', [CarController::class, 'compare']);
@@ -43,16 +46,29 @@ $router->post('/dang-ky', [AuthController::class, 'register']);
 $router->post('/dang-xuat', [AuthController::class, 'logout']);
 $router->get('/tai-khoan/ho-so', [AuthController::class, 'profile']);
 $router->post('/tai-khoan/ho-so', [AuthController::class, 'updateProfile']);
+$router->get('/tai-khoan/chat/chua-doc', [SupportChatController::class, 'unreadCount']);
+$router->get('/tai-khoan/chat/tin-nhan', [SupportChatController::class, 'messages']);
+$router->post('/tai-khoan/chat/tin-nhan', [SupportChatController::class, 'send']);
 $router->get('/admin', [AdminController::class, 'index']);
+
 if (Environment::get('APP_ENV') === 'development') {
     $router->get('/admin/email-test', [AdminEmailTestController::class, 'index']);
     $router->post('/admin/email-test', [AdminEmailTestController::class, 'send']);
 }
+
+$router->get('/admin/chat', [AdminSupportChatController::class, 'index']);
+$router->get('/admin/chat/cuoc-tro-chuyen', [AdminSupportChatController::class, 'conversations']);
+$router->get('/admin/chat/{id}', [AdminSupportChatController::class, 'messages']);
+$router->post('/admin/chat/{id}', [AdminSupportChatController::class, 'reply']);
+>>>>>>> 20594bd5d59376df6f81c1a97ec32066787a3343
 $router->get('/yeu-thich', [CarController::class, 'favorites']);
 $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $router->get('/admin/xe', [AdminCarController::class, 'index']);
 $router->get('/admin/don-hang', [OrderController::class, 'adminOrders']);
 $router->post('/admin/don-hang/{id}/cap-nhat', [OrderController::class, 'updateOrder']);
+$router->post('/admin/don-hang/{id}/doi-soat', [OrderController::class, 'verifyPayment']);
+$router->post('/admin/don-hang/{id}/huy', [OrderController::class, 'cancelOrder']);
+$router->post('/admin/don-hang/{id}/hoan-coc', [OrderController::class, 'refundDeposit']);
 $router->get('/admin/voucher', [AdminVoucherController::class, 'index']);
 $router->post('/admin/voucher', [AdminVoucherController::class, 'create']);
 $router->get('/admin/voucher/{id}/sua', [AdminVoucherController::class, 'editForm']);
