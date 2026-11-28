@@ -12,7 +12,28 @@ final class HomeController extends Controller
 {
     public function index(): void
     {
-        $cars = (new Car())->featured();
+        $cars = (new Car())->featured(12);
+        $bannerCars = [];
+        foreach (['Lamborghini', 'Porsche', 'Mercedes-Benz', 'BMW'] as $brand) {
+            foreach ($cars as $car) {
+                if (strcasecmp(trim((string) ($car['brand'] ?? '')), $brand) === 0) {
+                    $bannerCars[] = $car;
+                    break;
+                }
+            }
+        }
+        foreach ($cars as $car) {
+            if (count($bannerCars) >= 4) {
+                break;
+            }
+            $alreadyAdded = array_filter(
+                $bannerCars,
+                static fn (array $bannerCar): bool => (int) $bannerCar['id'] === (int) $car['id']
+            );
+            if ($alreadyAdded === []) {
+                $bannerCars[] = $car;
+            }
+        }
         $catalog = new CatalogOption();
         $success = $_SESSION['_success'] ?? null;
         unset($_SESSION['_success']);
@@ -20,7 +41,7 @@ final class HomeController extends Controller
         unset($_SESSION['_flash']);
         $this->render('home/index', [
             'cars' => $cars,
-            'bannerCars' => array_slice($cars, 0, 3),
+            'bannerCars' => $bannerCars,
             'brands' => $catalog->values('brand'),
             'bodyTypes' => $catalog->values('body_type'),
             'success' => is_string($success) ? $success : null,
