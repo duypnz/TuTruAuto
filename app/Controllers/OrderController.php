@@ -6,7 +6,9 @@ namespace App\Controllers;
 use App\Core\Controller;
 use App\Core\Csrf;
 use App\Models\CustomerOrder;
+use App\Services\EmailService;
 use DateTimeImmutable;
+use Throwable;
 
 final class OrderController extends Controller
 {
@@ -110,14 +112,29 @@ final class OrderController extends Controller
             $deliveryAt = $deliveryDate->format('Y-m-d H:i:s');
         }
 
-        $updated = (new CustomerOrder())->updateManagementDetails(
+        $update = (new CustomerOrder())->updateManagementDetails(
             (int) ($params['id'] ?? 0),
             $status,
             $deliveryAt
         );
-        $_SESSION['_flash'] = $updated
-            ? 'Đã cập nhật trạng thái và lịch nhận xe.'
-            : 'Không tìm thấy đơn hàng cần cập nhật.';
+        if ($update === null) {
+            $_SESSION['_flash'] = 'Không tìm thấy đơn hàng cần cập nhật.';
+            $this->redirect('/admin/don-hang');
+        }
+
+        $_SESSION['_flash'] = 'Đã cập nhật trạng thái và lịch nhận xe.';
+        if ($update['status_changed']) {
+            try {
+                (new EmailService())->sendOrderStatusUpdate($update['order']);
+            } catch (Throwable $error) {
+                error_log(sprintf(
+                    'Order status email failed for order #%d: %s',
+                    (int) $params['id'],
+                    $error->getMessage()
+                ));
+                $_SESSION['_flash'] .= ' Trạng thái đã lưu nhưng email thông báo chưa gửi được.';
+            }
+        }
         $this->redirect('/admin/don-hang');
     }
 

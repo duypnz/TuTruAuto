@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\Core\Router;
+use App\Core\Environment;
 use App\Controllers\HomeController;
 use App\Controllers\CarController;
 use App\Controllers\AuthController;
@@ -12,8 +13,10 @@ use App\Controllers\Admin\InquiryController as AdminInquiryController;
 use App\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Controllers\Admin\UserController as AdminUserController;
 use App\Controllers\Admin\VoucherController as AdminVoucherController;
+use App\Controllers\Admin\EmailTestController as AdminEmailTestController;
 use App\Controllers\OrderController;
 
+require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/app/Core/Autoloader.php';
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -41,6 +44,10 @@ $router->post('/dang-xuat', [AuthController::class, 'logout']);
 $router->get('/tai-khoan/ho-so', [AuthController::class, 'profile']);
 $router->post('/tai-khoan/ho-so', [AuthController::class, 'updateProfile']);
 $router->get('/admin', [AdminController::class, 'index']);
+if (Environment::get('APP_ENV') === 'development') {
+    $router->get('/admin/email-test', [AdminEmailTestController::class, 'index']);
+    $router->post('/admin/email-test', [AdminEmailTestController::class, 'send']);
+}
 $router->get('/yeu-thich', [CarController::class, 'favorites']);
 $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $router->get('/admin/xe', [AdminCarController::class, 'index']);

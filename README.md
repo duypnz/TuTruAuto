@@ -9,6 +9,18 @@ Website giới thiệu và bán xe ô tô bằng PHP 8.1+, PDO, MySQL/MariaDB v�
 3. Sao chép `.env.example` thành `.env` và cập nhật thông tin MySQL nếu khác cấu hình mặc định.
 4. Mở `http://localhost/Tu-Tru-Auto/`.
 
+### Email thông báo đơn hàng
+
+Email xác nhận được gửi sau khi đơn đã lưu thành công; email cập nhật được gửi khi trạng thái đơn thay đổi. Gmail cấu hình trong `SMTP_USERNAME` nhận một bản sao BCC của email đơn hàng. Lỗi SMTP không làm mất đơn hoặc hủy cập nhật. Cấu hình trong `.env` (file này đã được Git bỏ qua):
+
+1. Bật xác minh 2 bước cho tài khoản Google gửi thư, sau đó tạo **App Password** trong phần bảo mật tài khoản Google. Dùng App Password, không dùng mật khẩu đăng nhập Gmail.
+2. Điền `SMTP_USERNAME` bằng địa chỉ Gmail, `SMTP_PASSWORD` bằng App Password (có thể bỏ khoảng trắng khi sao chép), `MAIL_FROM_EMAIL` bằng cùng địa chỉ Gmail và giữ `SMTP_HOST=smtp.gmail.com`, `SMTP_PORT=587`, `SMTP_ENCRYPTION=tls`.
+3. Nếu chưa có, sao chép `.env.example` thành `.env`; không điền mật khẩu thật vào `.env.example` và không đưa `.env` lên GitHub.
+4. Để kiểm thử, đăng nhập bằng tài khoản khách hàng, tạo yêu cầu đặt cọc xe và kiểm tra hộp thư (kể cả Spam). Sau đó vào **Quản trị → Đơn đặt cọc**, đổi trạng thái đơn và kiểm tra email cập nhật. Lưu lại cùng trạng thái không gửi email trùng.
+
+Nếu gửi thất bại, website vẫn lưu đơn/cập nhật trạng thái và hiển thị thông báo; xem chi tiết lỗi SMTP trong log lỗi Apache/PHP của XAMPP, kiểm tra lại cấu hình và thử lại bằng một lần đổi trạng thái khác.
+Trong môi trường `APP_ENV=development`, Admin có thể mở **Quản trị → Kiểm thử Gmail SMTP** từ Dashboard để gửi email thử tới địa chỉ nhập vào. Đường dẫn và giao diện này không được đăng ký khi `APP_ENV` khác `development`.
+
 Trang chủ, danh sách xe, lọc/tìm kiếm, banner và trang chi tiết dùng dữ liệu trong bảng `cars`. Ảnh mẫu hiện dùng URL ngoài nên cần kết nối internet để hiển thị. Sau khi cài mới, chạy tiếp các migration `005_admin_contacts_payment_catalog.sql`, `006_new_cars_and_gallery.sql`, `007_car_inventory.sql`, `008_expand_new_car_details.sql` và `009_voucher_management.sql` để nạp xe mẫu, thông số, danh mục, tồn kho, nội dung chi tiết và cấu hình voucher.
 
 ### Cập nhật cơ sở dữ liệu hiện có

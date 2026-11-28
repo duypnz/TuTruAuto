@@ -2,6 +2,7 @@
   "name": "tutru/oto-showroom",
   "description": "Website showroom ô tô Tu Tru Auto",
   "type": "project",
-  "require": {"php": ">=8.1", "ext-pdo": "*"},
+  "require": {"php": ">=8.1", "ext-pdo": "*",
+    "phpmailer/phpmailer": "^7.2"},
   "autoload": {"psr-4": {"App\\": "app/"}}
 }

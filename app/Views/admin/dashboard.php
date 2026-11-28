@@ -4,6 +4,7 @@ require_once dirname(__DIR__, 2) . '/Helpers/view.php';
 
 $monthlyStats = $monthlyStats ?? [];
 $salesStats = $salesStats ?? ['revenue' => 0, 'order_count' => 0, 'sold_cars' => 0];
+$showEmailTest = $showEmailTest ?? false;
 $maxRevenue = max(1, ...array_map(static fn (array $month): int => (int) $month['revenue'], $monthlyStats));
 $maxOrders = max(1, ...array_map(static fn (array $month): int => (int) $month['order_count'], $monthlyStats));
 $plotLeft = 64;
@@ -91,6 +92,7 @@ ob_start();
         <div class="dashboard-quick-links">
             <a class="dashboard-action-card" href="<?= e(url('/admin/don-hang')) ?>"><span class="dashboard-action-icon">↗</span><span><strong>Quản lý đơn đặt cọc</strong><small>Tìm kiếm đơn, cập nhật tiền cọc và lịch nhận xe</small></span><b>→</b></a>
             <a class="dashboard-action-card" href="<?= e(url('/admin/xe')) ?>"><span class="dashboard-action-icon">▣</span><span><strong>Quản lý kho xe</strong><small>Cập nhật thông tin, giá và tình trạng xe</small></span><b>→</b></a>
+            <?php if ($showEmailTest): ?><a class="dashboard-action-card" href="<?= e(url('/admin/email-test')) ?>"><span class="dashboard-action-icon">✉</span><span><strong>Kiểm thử Gmail SMTP</strong><small>Gửi email thử trong môi trường phát triển</small></span><b>→</b></a><?php endif; ?>
         </div>
 
         <div class="admin-panel"><h2>Tài khoản quản trị</h2><p>Quyền quản trị được cấp riêng trong cơ sở dữ liệu. Người dùng đăng ký mới luôn chỉ có quyền khách hàng.</p><a class="button button-dark" href="<?= e(url('/')) ?>">Về trang chủ <span>↗</span></a></div>
