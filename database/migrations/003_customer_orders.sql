@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS customer_orders (
     status ENUM('pending', 'deposit_pending', 'deposit_paid', 'purchased', 'cancelled') NOT NULL DEFAULT 'pending',
     customer_name VARCHAR(120) NOT NULL,
     phone VARCHAR(30) NOT NULL,
+    email VARCHAR(190) NULL,
     message TEXT NULL,
     voucher_code VARCHAR(40) NULL,
     subtotal DECIMAL(15,0) NOT NULL,

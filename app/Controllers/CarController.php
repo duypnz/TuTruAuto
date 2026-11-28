@@ -204,6 +204,7 @@ final class CarController extends Controller
                 'status' => 'deposit_pending',
                 'customer_name' => $name,
                 'phone' => $phone,
+                'email' => $email,
                 'message' => $description,
                 'voucher_code' => $voucherCode,
                 'subtotal' => $unitPrice * $quantity,
@@ -236,7 +237,7 @@ final class CarController extends Controller
             }
             $emailSent = true;
             try {
-                $createdOrder = (new CustomerOrder())->findForCustomerById((int) $userId, $orderId);
+                $createdOrder = (new CustomerOrder())->findForCustomerById($userId, $orderId);
                 if ($createdOrder === null) {
                     throw new \RuntimeException('Không tìm thấy đơn hàng vừa tạo để gửi email.');
                 }
