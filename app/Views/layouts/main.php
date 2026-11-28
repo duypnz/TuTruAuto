@@ -258,7 +258,6 @@ $adminNavigation = [
             </div>
         </div>
     </footer>
-
     <?php if (isCustomerLoggedIn()): ?>
         <section class="support-chat" data-support-chat
             data-messages-url="<?= e(url('/tai-khoan/chat/tin-nhan')) ?>"
@@ -290,6 +289,8 @@ $adminNavigation = [
         </button>
     <?php endif; ?>
 
+=======
+    <script type="module" src="https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js"></script>
     <script
         src="<?= e(url('/public/assets/js/app.js')) ?>?v=<?= e((string) filemtime(dirname(__DIR__, 3) . '/public/assets/js/app.js')) ?>"
         defer>
