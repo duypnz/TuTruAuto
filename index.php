@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 use App\Core\Router;
+use App\Core\Environment;
 use App\Controllers\HomeController;
 use App\Controllers\CarController;
 use App\Controllers\AuthController;
@@ -14,8 +15,10 @@ use App\Controllers\Admin\SupportChatController as AdminSupportChatController;
 use App\Controllers\Admin\SettingsController as AdminSettingsController;
 use App\Controllers\Admin\UserController as AdminUserController;
 use App\Controllers\Admin\VoucherController as AdminVoucherController;
+use App\Controllers\Admin\EmailTestController as AdminEmailTestController;
 use App\Controllers\OrderController;
 
+require __DIR__ . '/vendor/autoload.php';
 require __DIR__ . '/app/Core/Autoloader.php';
 date_default_timezone_set('Asia/Ho_Chi_Minh');
 if (session_status() !== PHP_SESSION_ACTIVE) {
@@ -47,10 +50,17 @@ $router->get('/tai-khoan/chat/chua-doc', [SupportChatController::class, 'unreadC
 $router->get('/tai-khoan/chat/tin-nhan', [SupportChatController::class, 'messages']);
 $router->post('/tai-khoan/chat/tin-nhan', [SupportChatController::class, 'send']);
 $router->get('/admin', [AdminController::class, 'index']);
+
+if (Environment::get('APP_ENV') === 'development') {
+    $router->get('/admin/email-test', [AdminEmailTestController::class, 'index']);
+    $router->post('/admin/email-test', [AdminEmailTestController::class, 'send']);
+}
+
 $router->get('/admin/chat', [AdminSupportChatController::class, 'index']);
 $router->get('/admin/chat/cuoc-tro-chuyen', [AdminSupportChatController::class, 'conversations']);
 $router->get('/admin/chat/{id}', [AdminSupportChatController::class, 'messages']);
 $router->post('/admin/chat/{id}', [AdminSupportChatController::class, 'reply']);
+
 $router->get('/yeu-thich', [CarController::class, 'favorites']);
 $router->post('/yeu-thich/{slug}/toggle', [CarController::class, 'toggleFavorite']);
 $router->get('/admin/xe', [AdminCarController::class, 'index']);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controllers;
 
 use App\Core\Controller;
+use App\Core\Environment;
 use App\Models\Car;
 use App\Models\CustomerOrder;
 use App\Models\User;
@@ -29,6 +30,7 @@ final class AdminController extends Controller
             'salesStats' => $orders->statistics(),
             'monthlyStats' => $orders->monthlyStatistics(),
             'admin' => $_SESSION['user'],
+            'showEmailTest' => Environment::get('APP_ENV') === 'development',
         ]);
     }
 }

@@ -9,8 +9,10 @@ use App\Exceptions\VoucherException;
 use App\Models\Car;
 use App\Models\CatalogOption;
 use App\Models\CustomerInquiry;
+use App\Models\CustomerOrder;
 use App\Models\SiteSetting;
 use App\Services\CheckoutService;
+use App\Services\EmailService;
 use App\Services\VoucherService;
 use Throwable;
 
@@ -232,11 +234,29 @@ final class CarController extends Controller
                 $_SESSION['_flash'] = 'Mã giảm giá không còn hợp lệ: ' . $error->getMessage();
                 $this->redirect('/xe/' . rawurlencode((string) $car['slug']));
             }
+            $emailSent = true;
+            try {
+                $createdOrder = (new CustomerOrder())->findForCustomerById((int) $userId, $orderId);
+                if ($createdOrder === null) {
+                    throw new \RuntimeException('Không tìm thấy đơn hàng vừa tạo để gửi email.');
+                }
+                (new EmailService())->sendOrderConfirmation($createdOrder);
+            } catch (Throwable $error) {
+                $emailSent = false;
+                error_log(sprintf(
+                    'Order confirmation email failed for order #%d: %s',
+                    $orderId,
+                    $error->getMessage()
+                ));
+            }
             $_SESSION['_success'] = match ($paymentDetails['inventory_status']) {
                 'in_stock' => 'Đã tạo yêu cầu đặt cọc #' . $orderId . '. Tiền cọc bằng 10% giá xe.',
                 'preorder' => 'Đã tạo yêu cầu đặt cọc trước #' . $orderId . '. Showroom sẽ xác nhận thời gian nhận xe dự kiến.',
                 default => 'Đã tạo yêu cầu #' . $orderId . '. Showroom sẽ kiểm tra tồn kho trước khi xác nhận nhận cọc.',
             };
+            if (!$emailSent) {
+                $_SESSION['_success'] .= ' Đơn hàng đã được lưu nhưng email xác nhận chưa gửi được.';
+            }
             $this->redirect('/tai-khoan/don-hang/' . $orderId);
         }
         (new CustomerInquiry())->create(

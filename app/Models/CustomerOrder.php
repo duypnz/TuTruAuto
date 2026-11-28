@@ -246,7 +246,7 @@ final class CustomerOrder
         );
         $stmt->execute($params);
 
-        return true;
+        return $stmt->rowCount() > 0 || $this->findRawById($orderId) !== null;
     }
 
     private function findOrders(string $where, array $params): array
