@@ -1,6 +1,17 @@
 
 document.addEventListener('DOMContentLoaded', () => {
-
+    const navLinks = Array.from(document.querySelectorAll('.main-nav a'));
+    const syncHashActiveLink = () => {
+        if (window.location.pathname === '/' || window.location.hash) {
+            navLinks.forEach((link) => {
+                const href = link.getAttribute('href') || '';
+                link.classList.toggle('is-active', href.includes('#dich-vu') && window.location.hash === '#dich-vu');
+            });
+        }
+    };
+    syncHashActiveLink();
+    window.addEventListener('hashchange', syncHashActiveLink);
+=======
     const carModelViewer = document.querySelector('#car-3d-model');
     const openCar3dButton = document.querySelector('[data-open-car-3d]');
     const car3dPanel = document.querySelector('[data-car-3d-panel]');

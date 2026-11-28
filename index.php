@@ -24,6 +24,7 @@ if (session_status() !== PHP_SESSION_ACTIVE) {
 }
 $router = new Router();
 $router->get('/', [HomeController::class, 'index']);
+$router->get('/ve-chung-toi', [HomeController::class, 'about']);
 $router->get('/xe', [CarController::class, 'index']);
 $router->get('/xe/{slug}', [CarController::class, 'show']);
 $router->get('/so-sanh', [CarController::class, 'compare']);
