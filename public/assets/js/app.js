@@ -11,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     };
     syncHashActiveLink();
     window.addEventListener('hashchange', syncHashActiveLink);
-=======
     const carModelViewer = document.querySelector('#car-3d-model');
     const openCar3dButton = document.querySelector('[data-open-car-3d]');
     const car3dPanel = document.querySelector('[data-car-3d-panel]');
@@ -76,11 +75,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('[data-hero-next]')?.addEventListener('click', () => showSlide(currentSlide + 1));
         dots.forEach((dot) => dot.addEventListener('click', () => showSlide(Number(dot.dataset.heroDot))));
         if (slides.length > 1 && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-            let timer = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+            let timer = window.setInterval(() => showSlide(currentSlide + 1), 3000);
             heroCarousel.addEventListener('mouseenter', () => window.clearInterval(timer));
             heroCarousel.addEventListener('mouseleave', () => {
                 window.clearInterval(timer);
-                timer = window.setInterval(() => showSlide(currentSlide + 1), 5500);
+                timer = window.setInterval(() => showSlide(currentSlide + 1), 3000);
             });
         }
     }
